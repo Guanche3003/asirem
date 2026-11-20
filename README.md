@@ -31,7 +31,6 @@ Identifiants de démonstration : `admin` / `Atelier2026!`.
 - SIREN : 992 752 899 — SIRET : 992 752 899 00011
 - RCS Paris, immatriculée le 27/10/2025
 - TVA : FR03 992 752 899
-- Siège : BUREAU 326, 59 rue de Ponthieu, 75008 Paris
 - APE/NAF : 32.99Z — Hébergeur : Hostinger
 - Contact : contact@asirem-cosmetiques.fr, +33 6 56 69 51 12
 - Réseaux : Instagram @asiremcos, TikTok @asiremcosmetiques

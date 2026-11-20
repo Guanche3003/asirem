@@ -6,6 +6,8 @@ const EMPTY = { name: '', email: '', phone: '', subject: '', message: '' };
 
 export default function Contact() {
   const { settings } = useSite();
+  const fullAddress = [settings.address, [settings.zip, settings.city].filter(Boolean).join(' ')]
+    .filter(Boolean).join(', ');
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -38,7 +40,7 @@ export default function Contact() {
         <div className="as-contact-grid">
           <div className="as-contact-aside">
             <h2>L'atelier</h2>
-            <div className="as-info-row"><i aria-hidden="true">📍</i><div>{settings.address}<br />{settings.zip} {settings.city}</div></div>
+            {fullAddress && <div className="as-info-row"><i aria-hidden="true">📍</i><div>{fullAddress}</div></div>}
             <div className="as-info-row"><i aria-hidden="true">✉️</i><div><a href={`mailto:${settings.email}`}>{settings.email}</a></div></div>
             <div className="as-info-row"><i aria-hidden="true">📞</i><div><a href={settings.whatsapp} target="_blank" rel="noopener noreferrer">{settings.phone}</a></div></div>
             <div className="as-info-row"><i aria-hidden="true">🕐</i><div>{settings.hours}</div></div>

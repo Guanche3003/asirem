@@ -109,7 +109,6 @@ export const LEGAL_PAGES = {
           'SIRET (siège) : 992 752 899 00011',
           'Numéro RCS : 992 752 899 R.C.S. Paris — immatriculée au greffe de Paris, le 27/10/2025',
           'Numéro de TVA intracommunautaire : FR03 992 752 899',
-          'Adresse du siège social : BUREAU 326, 59 rue de Ponthieu, 75008 Paris',
           'Activité principale : Création, personnalisation et vente de bougies artisanales, bougeoirs, objets décoratifs et accessoires liés à l’art de la bougie (code APE/NAF 32.99Z)',
         ],
       },
@@ -151,7 +150,7 @@ export const LEGAL_PAGES = {
       {
         heading: 'Préambule',
         paragraphs: [
-          'Les présentes conditions générales de vente régissent les relations contractuelles entre ASIREM COSMÉTIQUES (EI, SIREN 992 752 899, siège social : BUREAU 326, 59 rue de Ponthieu, 75008 Paris) et tout client effectuant un achat via le site asirem-cosmetiques.fr. En passant commande, le client reconnaît avoir pris connaissance et accepté sans réserve les présentes CGV.',
+          'Les présentes conditions générales de vente régissent les relations contractuelles entre ASIREM COSMÉTIQUES (EI, SIREN 992 752 899) et tout client effectuant un achat via le site asirem-cosmetiques.fr. En passant commande, le client reconnaît avoir pris connaissance et accepté sans réserve les présentes CGV.',
         ],
       },
       {
@@ -193,7 +192,7 @@ export const LEGAL_PAGES = {
       {
         heading: 'Contact',
         paragraphs: [
-          'Par email : contact@asirem-cosmetiques.fr · Par WhatsApp : +33 6 56 69 51 12 · Par courrier : BUREAU 326, 59 rue de Ponthieu, 75008 Paris.',
+          'Par email : contact@asirem-cosmetiques.fr · Par WhatsApp : +33 6 56 69 51 12.',
         ],
       },
     ],
@@ -237,7 +236,7 @@ export const LEGAL_PAGES = {
       {
         heading: '6. Coordonnées',
         paragraphs: [
-          'Asirem Cosmétiques · BUREAU 326, 59 rue de Ponthieu, 75008 Paris · France · Email : contact@asirem-cosmetiques.fr',
+          'Asirem Cosmétiques · France · Email : contact@asirem-cosmetiques.fr',
         ],
       },
     ],

@@ -37,6 +37,8 @@ export default function PublicLayout() {
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   const name = settings.shop_name || 'ASIREM COSMÉTIQUES';
+  const fullAddress = [settings.address, [settings.zip, settings.city].filter(Boolean).join(' ')]
+    .filter(Boolean).join(', ');
   const whatsapp = settings.whatsapp || 'https://wa.me/33656695112';
   const compact = !isHome || scrolled;
   const navItems = NAV.map((item) =>
@@ -135,7 +137,7 @@ export default function PublicLayout() {
               <ul>
                 <li><a href={whatsapp} target="_blank" rel="noopener noreferrer">{settings.phone || '+33 6 56 69 51 12'}</a></li>
                 <li><a href={`mailto:${settings.email || 'contact@asirem-cosmetiques.fr'}`}>{settings.email || 'contact@asirem-cosmetiques.fr'}</a></li>
-                <li>{settings.address}<br />{settings.zip} {settings.city}</li>
+                {fullAddress && <li>{fullAddress}</li>}
               </ul>
             </div>
           </div>
