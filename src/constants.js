@@ -38,6 +38,15 @@ export const CONTACT_STATUSES = [
 export const labelOf = (list, value) => list.find((x) => x.value === value)?.label || value || '—';
 export const toneOf = (list, value) => list.find((x) => x.value === value)?.tone || 'muted';
 
+export const EVENT_IMAGE_CHOICES = [
+  { label: 'Stand évènementiel', value: '/galerie/Stand.jpg' },
+  { label: 'Stand (vue 2)', value: '/galerie/Stand 2.jpg' },
+  { label: 'Bougies sur stand', value: '/galerie/Bougies stand.jpg' },
+  { label: 'Bougies exposées', value: '/galerie/Articles/1.jpg' },
+  { label: 'Créations diverses', value: '/galerie/Articles/2.jpg' },
+  { label: 'Coffret', value: '/galerie/Gourmandise de noel.jpg' },
+];
+
 export const CATEGORY_EMOJI = {
   bougie: '🕯️',
   fondant: '🌸',

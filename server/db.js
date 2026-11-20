@@ -184,6 +184,19 @@ CREATE TABLE IF NOT EXISTS stock_movements (
   created_at  TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS events (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  title       TEXT NOT NULL,
+  event_date  TEXT NOT NULL DEFAULT '',
+  location    TEXT DEFAULT '',
+  description TEXT DEFAULT '',
+  image_url   TEXT DEFAULT '',
+  active      INTEGER NOT NULL DEFAULT 1,
+  created_at  TEXT NOT NULL,
+  updated_at  TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_product_materials_product ON product_materials(product_id);
@@ -223,6 +236,43 @@ const DEFAULT_SETTINGS = {
   hero_image: '/galerie/Bougies%20stand.jpg',
   featured_video: '/videos/coffret.mp4',
 };
+
+const DEFAULT_EVENTS = [
+  {
+    title: 'Marché de Noël — Orléans',
+    event_date: '2026-12-06',
+    location: 'Place du Martroi, 45000 Orléans',
+    description: 'Retrouvez les bougies ASIREM sur le stand, avec des créations de Noël et la possibilité de personnaliser vos coffrets.',
+    image_url: '/galerie/Stand.jpg',
+  },
+  {
+    title: 'Atelier découverte : créer sa bougie',
+    event_date: '2026-12-13',
+    location: 'Atelier ASIREM, près d’Orléans',
+    description: 'Une initiation de deux heures pour choisir son parfum, couler sa bougie et repartir avec sa création. Sur réservation.',
+    image_url: '/galerie/Stand 2.jpg',
+  },
+  {
+    title: 'Salon des créateurs',
+    event_date: '2027-03-20',
+    location: 'Paris',
+    description: 'Une journée de rencontres autour du fait main et des parfums d’exception, avec une sélection de créations ASIREM.',
+    image_url: '/galerie/Bougies stand.jpg',
+  },
+];
+
+function seedEvents() {
+  if (get('SELECT COUNT(*) AS n FROM events').n > 0) return;
+  const timestamp = now();
+  for (const event of DEFAULT_EVENTS) {
+    run(
+      `INSERT INTO events (title, event_date, location, description, image_url, active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+      event.title, event.event_date, event.location, event.description, event.image_url,
+      timestamp, timestamp,
+    );
+  }
+}
 
 function seed() {
   const timestamp = now();
@@ -399,6 +449,7 @@ export function initDb({ force = false } = {}) {
   }
   getDb().exec(SCHEMA);
   seed();
+  seedEvents();
   return DB_PATH;
 }
 

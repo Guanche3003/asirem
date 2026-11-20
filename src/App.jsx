@@ -18,6 +18,7 @@ import Suppliers from './pages/admin/Suppliers.jsx';
 import Orders from './pages/admin/Orders.jsx';
 import Contacts from './pages/admin/Contacts.jsx';
 import Settings from './pages/admin/Settings.jsx';
+import Events from './pages/admin/Events.jsx';
 
 function NotFound() {
   return (
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="fournisseurs" element={<Suppliers />} />
         <Route path="commandes" element={<Orders />} />
         <Route path="contacts" element={<Contacts />} />
+        <Route path="evenements" element={<Events />} />
         <Route path="parametres" element={<Settings />} />
       </Route>
       <Route element={<PublicLayout />}>

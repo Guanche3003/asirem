@@ -5,10 +5,18 @@ import { GALLERY, TESTIMONIALS, VALUES } from '../../data/asirem.js';
 import { useSite } from './PublicLayout.jsx';
 import ProductCard from '../../components/ProductCard.jsx';
 
+function formatEventDate(value) {
+  const parts = String(value || '').split('-');
+  if (parts.length !== 3 || !parts.every((part) => /^\d+$/.test(part))) return value || 'Date à confirmer';
+  return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+    .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 export default function Home() {
   const { settings } = useSite();
   const location = useLocation();
   const [products, setProducts] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -16,8 +24,11 @@ export default function Home() {
   const dialogRef = useRef(null);
 
   useEffect(() => {
-    api.get('/public/products')
-      .then((data) => setProducts(data.items || []))
+    Promise.all([api.get('/public/products'), api.get('/public/events')])
+      .then(([productData, eventData]) => {
+        setProducts(productData.items || []);
+        setEvents(eventData.items || []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -237,6 +248,42 @@ export default function Home() {
           </div>
         )}
       </dialog>
+
+      <section className="as-band as-band--paper" id="evenements">
+        <div className="as-section">
+          <div className="as-section-head">
+            <span className="as-kicker">Évènements</span>
+            <h2 className="as-section-title">Retrouvez-moi <em>en vrai</em></h2>
+            <div className="as-bars" aria-hidden="true"><span /><span /><span /><span /><span /></div>
+            <p className="as-section-text">
+              Marchés, salons et ateliers : voici les prochaines occasions de découvrir les bougies ASIREM et de repartir avec votre parfum préféré.
+            </p>
+          </div>
+          {events.length > 0 ? (
+            <div className="as-events-grid">
+              {events.map((event) => (
+                <article className="as-event-card" key={event.id}>
+                  <div className="as-event-media">
+                    {event.image_url
+                      ? <img src={event.image_url} alt={event.title} loading="lazy" />
+                      : <span aria-hidden="true">📅</span>}
+                  </div>
+                  <div className="as-event-body">
+                    <time className="as-event-date" dateTime={event.event_date || undefined}>
+                      {formatEventDate(event.event_date)}
+                    </time>
+                    <h3>{event.title}</h3>
+                    {event.location && <p className="as-event-location">📍 {event.location}</p>}
+                    {event.description && <p className="as-event-desc">{event.description}</p>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="as-empty"><p>Aucun évènement annoncé pour le moment. Revenez bientôt !</p></div>
+          )}
+        </div>
+      </section>
 
       <section className="as-band as-band--soft" id="temoignages">
         <div className="as-section">

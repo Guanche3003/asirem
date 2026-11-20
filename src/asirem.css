@@ -238,6 +238,27 @@
 .as-lightbox-copy p { color: var(--ink-soft); line-height: 1.7; }
 .as-lightbox-close { align-self: flex-start; margin-top: 1.5rem; background: transparent; border: 0; color: var(--as-olive); font-weight: 600; }
 
+/* Évènements */
+.as-events-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.as-event-card {
+  display: flex; flex-direction: column; background: #fff; border-radius: 16px; overflow: hidden;
+  border: 1px solid rgba(212, 168, 83, .25);
+}
+.as-event-media {
+  aspect-ratio: 16 / 10; display: grid; place-items: center; overflow: hidden;
+  background: #f3e4d4; font-size: 3rem;
+}
+.as-event-media img { width: 100%; height: 100%; object-fit: cover; }
+.as-event-body { padding: 1.4rem; display: flex; flex-direction: column; flex: 1; }
+.as-event-date {
+  align-self: flex-start; margin-bottom: .9rem; padding: .35rem .85rem; border-radius: 999px;
+  background: rgba(139, 105, 20, .1); color: var(--as-olive);
+  font-family: var(--font-body); font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+}
+.as-event-body h3 { font-size: 1.35rem; margin: 0 0 .6rem; }
+.as-event-location { color: var(--as-brown); font-size: .85rem; font-weight: 600; margin-bottom: .7rem; }
+.as-event-desc { color: var(--ink-soft); font-size: .88rem; line-height: 1.75; margin: 0; }
+
 /* Témoignages */
 .as-testimonials { display: grid; grid-template-columns: 1fr 2fr; gap: 3rem; align-items: center; }
 .as-testimonial-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
@@ -319,7 +340,7 @@
   .as-values { grid-template-columns: repeat(2, 1fr); }
   .as-featured { grid-template-columns: 1fr; }
   .as-featured-media { min-height: 300px; }
-  .as-product-grid { grid-template-columns: repeat(2, 1fr); }
+  .as-product-grid, .as-events-grid { grid-template-columns: repeat(2, 1fr); }
   .as-about-grid, .as-testimonials, .as-detail, .as-contact-grid { grid-template-columns: 1fr; }
   .as-about-grid { gap: 3.5rem; }
   .as-testimonial-list { grid-template-columns: repeat(2, 1fr); }
@@ -329,7 +350,7 @@
   .as-burger { display: block; }
 }
 @media (max-width: 640px) {
-  .as-values, .as-product-grid, .as-mini-card, .as-testimonial-list, .as-lightbox-inner { grid-template-columns: 1fr; }
+  .as-values, .as-product-grid, .as-events-grid, .as-mini-card, .as-testimonial-list, .as-lightbox-inner { grid-template-columns: 1fr; }
   .as-mini-card { grid-template-columns: 1fr; }
   .as-product-row { grid-template-columns: 1fr; }
   .as-lightbox-inner img { max-height: 45dvh; }

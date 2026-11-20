@@ -44,7 +44,7 @@ app.use((req, res, next) => {
   return next();
 });
 
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '8mb' }));
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
@@ -532,6 +532,75 @@ app.delete('/api/contacts/:id', authRequired, (req, res) => {
 });
 
 /* ------------------------------------------------------------------ */
+/* Évènements                                                          */
+/* ------------------------------------------------------------------ */
+
+app.get('/api/events', authRequired, (_req, res) =>
+  json(res, { items: all('SELECT * FROM events ORDER BY event_date ASC, id DESC') }));
+
+app.get('/api/events/:id', authRequired, (req, res) => {
+  const row = get('SELECT * FROM events WHERE id = ?', int(req.params.id, 0));
+  if (!row) return json(res, { error: 'Évènement introuvable.' }, 404);
+  return json(res, { item: row });
+});
+
+const eventPayload = (b, existing = {}) => ({
+  title: txt(b.title) || existing.title || '',
+  event_date: txt(b.event_date),
+  location: txt(b.location),
+  description: txt(b.description),
+  image_url: txt(b.image_url),
+  active: bool(b.active ?? 1),
+});
+
+app.post('/api/events', authRequired, (req, res) => {
+  const values = eventPayload(req.body || {});
+  if (!values.title) return json(res, { error: 'Le titre est obligatoire.' }, 400);
+  const date = now();
+  const result = run(
+    `INSERT INTO events (title, event_date, location, description, image_url, active, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    values.title, values.event_date, values.location, values.description,
+    values.image_url, values.active, date, date,
+  );
+  return json(res, { ok: true, id: Number(result.lastInsertRowid) }, 201);
+});
+
+app.put('/api/events/:id', authRequired, (req, res) => {
+  const id = int(req.params.id, 0);
+  const existing = get('SELECT * FROM events WHERE id = ?', id);
+  if (!existing) return json(res, { error: 'Évènement introuvable.' }, 404);
+  const values = eventPayload(req.body || {}, existing);
+  if (!values.title) return json(res, { error: 'Le titre est obligatoire.' }, 400);
+  run(
+    `UPDATE events SET title=?, event_date=?, location=?, description=?, image_url=?, active=?, updated_at=? WHERE id=?`,
+    values.title, values.event_date, values.location, values.description,
+    values.image_url, values.active, now(), id,
+  );
+  return json(res, { ok: true });
+});
+
+app.delete('/api/events/:id', authRequired, (req, res) => {
+  run('DELETE FROM events WHERE id = ?', int(req.params.id, 0));
+  return json(res, { ok: true });
+});
+
+// Upload d'une photo d'évènement (base64 envoyé par l'administration).
+app.post('/api/events/image', authRequired, (req, res) => {
+  const data = String(req.body?.data || '');
+  const match = data.match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
+  if (!match) return json(res, { error: 'Format d’image invalide (JPG, PNG ou WebP attendu).' }, 400);
+  const buffer = Buffer.from(match[2], 'base64');
+  if (buffer.length > 5 * 1024 * 1024) return json(res, { error: 'Image trop volumineuse (5 Mo maximum).' }, 413);
+  const extension = match[1] === 'jpeg' ? 'jpg' : match[1];
+  const uploadDir = path.join(ROOT, 'public', 'uploads', 'events');
+  fs.mkdirSync(uploadDir, { recursive: true });
+  const name = `${Date.now()}-${slugify(txt(req.body?.name).replace(/\.[^.]+$/, '')) || 'photo'}.${extension}`;
+  fs.writeFileSync(path.join(uploadDir, name), buffer);
+  return json(res, { url: `/uploads/events/${name}` }, 201);
+});
+
+/* ------------------------------------------------------------------ */
 /* Paramètres                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -568,6 +637,13 @@ app.get('/api/public/site', (_req, res) => {
   for (const key of PUBLIC_SETTING_KEYS) settings[key] = getSetting(key, '');
   return json(res, { settings });
 });
+
+app.get('/api/public/events', (_req, res) => json(res, {
+  items: all(
+    `SELECT id, title, event_date, location, description, image_url
+     FROM events WHERE active = 1 ORDER BY event_date ASC, id DESC`,
+  ),
+}));
 
 app.get('/api/public/products', (req, res) => {
   const category = txt(req.query.category);
