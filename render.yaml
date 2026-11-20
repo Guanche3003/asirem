@@ -12,8 +12,9 @@ services:
         value: production
       - key: HOST
         value: 0.0.0.0
+      # Plan gratuit : pas de disque persistant, la base est recréée à chaque déploiement.
       - key: DB_PATH
-        value: /data/crm.db
+        value: ./data/crm.db
       - key: CORS_ORIGIN
         value: https://asirem.vercel.app
       - key: COOKIE_SAMESITE
@@ -22,7 +23,12 @@ services:
         value: "1"
       - key: CRM_ADMIN_PASSWORD
         sync: false
-    disk:
-      name: asirem-data
-      mountPath: /data
-      sizeGB: 1
+
+# Pour conserver la base entre les déploiements, passer en plan payant :
+#   plan: starter
+# et ajouter :
+#   disk:
+#     name: asirem-data
+#     mountPath: /data
+#     sizeGB: 1
+# avec DB_PATH: /data/crm.db

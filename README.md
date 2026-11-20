@@ -96,7 +96,7 @@ Le build Vercel ne contient que le front. L'API Express et la base SQLite doiven
 1. Créez un **Web Service** depuis le dépôt. Le fichier `render.yaml` peut être importé comme *Blueprint*.
 2. Remplacez `CORS_ORIGIN` par l'URL réelle de votre site Vercel (ex. `https://asirem.vercel.app`).
 3. Définissez `CRM_ADMIN_PASSWORD` dans le tableau de bord Render (secret, jamais dans le dépôt).
-4. Le disque persistant `/data` conserve `crm.db` entre les redéploiements (selon le plan choisi).
+4. Le `render.yaml` fourni est compatible avec le **plan gratuit** : pas de disque persistant, la base est donc recréée avec les données ASIREM à chaque déploiement. Pour conserver les données, passez en `plan: starter`, montez un disque sur `/data` et utilisez `DB_PATH=/data/crm.db` (exemple commenté dans le fichier).
 5. Notez l'URL de l'API, par exemple `https://asirem-api.onrender.com`.
 
 Pour Railway : importez le dépôt, ajoutez un **volume persistant** monté sur `/data`, puis définissez les variables `DB_PATH=/data/crm.db`, `CORS_ORIGIN`, `COOKIE_SAMESITE=None`, `COOKIE_SECURE=1` et `CRM_ADMIN_PASSWORD`. `railway.json` fournit les commandes de build et de démarrage.
