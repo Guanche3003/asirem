@@ -1,0 +1,94 @@
+# ASIREM CRM — CRM bougier complet
+
+Application autonome pour gérer un atelier de bougies artisanales : ventes, matières premières, contacts, recettes, marges, site public dynamique et espace d'administration sécurisé.
+
+Le projet est adapté aux données et à l'identité visuelle d'**ASIREM COSMÉTIQUES** à partir du site source `C:\Users\aghil\Desktop\ASIREM COS\Site`. Il est totalement séparé du projet CAP.
+
+## Démarrage
+
+Prérequis : Node.js 24+ (utilise `node:sqlite`, aucune dépendance SQLite native).
+
+```powershell
+cd C:\Users\aghil\Downloads\bougie-crm
+npm install
+npm run db
+npm run dev
+```
+
+Ouvrez :
+
+- Site public : http://127.0.0.1:5173/
+- Administration : http://127.0.0.1:5173/admin
+- API : http://127.0.0.1:3001/api
+
+Identifiants de démonstration : `admin` / `Atelier2026!`.
+
+> Pour définir un autre mot de passe initial, définissez `CRM_ADMIN_PASSWORD` avant la première création de la base.
+
+## Identifiants ASIREM intégrés
+
+- Raison sociale : BENARAB SYPHAX — EI micro-entreprise
+- SIREN : 992 752 899 — SIRET : 992 752 899 00011
+- RCS Paris, immatriculée le 27/10/2025
+- TVA : FR03 992 752 899
+- Siège : BUREAU 326, 59 rue de Ponthieu, 75008 Paris
+- APE/NAF : 32.99Z — Hébergeur : Hostinger
+- Contact : contact@asirem-cosmetiques.fr, +33 6 56 69 51 12
+- Réseaux : Instagram @asiremcos, TikTok @asiremcosmetiques
+- Boutique d'origine : https://asirem-cosmetiques.fr/boutique/
+
+## Fonctionnalités
+
+### Site public dynamique
+
+- Accueil ASIREM : vidéo hero, badge « Artisan créateur de bougies », valeurs, coffret vidéo, nouveautés, galerie, témoignages et newsletter.
+- Boutique avec filtres par catégorie, prix et fiches produits issues du CRM.
+- Fiche produit avec image, description, poids, durée de diffusion et commande WhatsApp.
+- Page « Qui suis-je » avec l'histoire de Syphax et les photos de l'atelier.
+- Page contact avec formulaire enregistré dans le CRM.
+- Pages légales : mentions légales, CGV, politique de cookies et éditions thématiques.
+- Textes, coordonnées, logo, vidéos et prix pilotés depuis l'administration.
+
+### Administration protégée
+
+- Tableau de bord : chiffre d'affaires, commandes, stock, messages.
+- Calcul des matières premières et marges par produit/recette.
+- CRUD produits (recettes, prix, poids, catégorie, image, mise en avant).
+- CRUD matières premières avec stock et seuil d'alerte.
+- CRUD clients et fournisseurs.
+- Commandes avec déduction automatique du stock à l'expédition.
+- Messages reçus depuis le site public.
+- Paramètres boutique : identité, légal, contact, réseaux, logo, vidéos et textes.
+
+## Scripts
+
+```powershell
+npm run dev        # API + Vite en parallèle
+npm run server     # API seule (port 3001)
+npm run client     # Front seul (port 5173)
+npm run build      # Build de production
+npm run start      # API de production
+npm run db         # Crée la base si absente
+npm run reset-db   # Réinitialise la base avec les données ASIREM
+```
+
+## Structure
+
+```text
+server/          API Express, SQLite, seeds ASIREM
+src/
+  components/    éléments réutilisables (dont ProductCard)
+  data/asirem.js textes, galerie, témoignages et pages légales
+  pages/public/  site ASIREM dynamique
+  pages/admin/   administration
+  asirem.css     identité visuelle du site public
+  styles.css     base commune
+public/          assets copiés du site ASIREM (logo, photos, vidéos)
+data/crm.db      base SQLite générée
+```
+
+## Notes
+
+- Les prix des créations sont des valeurs de démonstration cohérentes : le catalogue WooCommerce en direct n'était pas accessible lors de l'adaptation. Ils peuvent être corrigés dans ** administration → Produits**.
+- Les fichiers statiques ASIREM sont servis par l'API sur `/logo.png`, `/Syphax.jpg`, `/galerie/...`, `/videos/...`.
+- Le cookie de session est `HttpOnly` ; les tokens sont hachés en base et les mots de passe sont hachés avec `scrypt`.
