@@ -9,8 +9,11 @@ import { fileURLToPath } from 'node:url';
 import { hashPassword } from './security.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.resolve(__dirname, '..', 'data');
-const DB_PATH = path.join(DATA_DIR, 'crm.db');
+// En production, DB_PATH peut pointer vers un disque persistant monté (/data/crm.db).
+export const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, '..', 'data'));
+export const DB_PATH = process.env.DB_PATH
+  ? path.resolve(process.env.DB_PATH)
+  : path.join(DATA_DIR, 'crm.db');
 
 let db = null;
 
@@ -20,7 +23,7 @@ export function now() {
 
 export function getDb() {
   if (!db) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
     db = new DatabaseSync(DB_PATH);
     db.exec('PRAGMA foreign_keys = ON;');
     db.exec('PRAGMA journal_mode = WAL;');

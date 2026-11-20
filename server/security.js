@@ -70,19 +70,20 @@ export function login(username, password) {
     : null;
 }
 
+function cookieFlags() {
+  const sameSite = process.env.COOKIE_SAMESITE || 'Lax';
+  const secure = process.env.COOKIE_SECURE === '1'
+    || (sameSite === 'None' && process.env.COOKIE_SECURE !== '0');
+  return `HttpOnly; SameSite=${sameSite}${secure ? '; Secure' : ''}; Path=/`;
+}
+
 export function sessionCookie(token, expires) {
   const maxAge = Math.max(0, Math.floor((new Date(expires).getTime() - Date.now()) / 1000));
-  return [
-    `${COOKIE_NAME}=${token}`,
-    'HttpOnly',
-    'SameSite=Lax',
-    'Path=/',
-    `Max-Age=${maxAge}`,
-  ].join('; ');
+  return `${COOKIE_NAME}=${token}; ${cookieFlags()}; Max-Age=${maxAge}`;
 }
 
 export function clearCookie() {
-  return `${COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`;
+  return `${COOKIE_NAME}=; ${cookieFlags()}; Max-Age=0`;
 }
 
 export function authRequired(req, res, next) {

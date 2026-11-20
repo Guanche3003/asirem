@@ -1,6 +1,10 @@
+// En production, VITE_API_URL pointe vers l'API hébergée séparément (Render/Railway).
+// En local, on reste sur le proxy Vite (/api -> 127.0.0.1:3001).
+const API_BASE = String(import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+
 async function request(url, options = {}) {
-  const response = await fetch(`/api${url}`, {
-    credentials: 'same-origin',
+  const response = await fetch(`${API_BASE}/api${url}`, {
+    credentials: 'include',
     ...options,
     headers: {
       'Content-Type': 'application/json',

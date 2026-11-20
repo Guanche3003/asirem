@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: asirem-api
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/public/site
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: DB_PATH
+        value: /data/crm.db
+      - key: CORS_ORIGIN
+        value: https://asirem.vercel.app
+      - key: COOKIE_SAMESITE
+        value: None
+      - key: COOKIE_SECURE
+        value: "1"
+      - key: CRM_ADMIN_PASSWORD
+        sync: false
+    disk:
+      name: asirem-data
+      mountPath: /data
+      sizeGB: 1

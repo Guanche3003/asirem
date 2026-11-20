@@ -87,6 +87,33 @@ public/          assets copiés du site ASIREM (logo, photos, vidéos)
 data/crm.db      base SQLite générée
 ```
 
+## Déploiement : front Vercel + API Render/Railway
+
+Le build Vercel ne contient que le front. L'API Express et la base SQLite doivent être hébergées séparément.
+
+### 1. API sur Render (recommandé)
+
+1. Créez un **Web Service** depuis le dépôt. Le fichier `render.yaml` peut être importé comme *Blueprint*.
+2. Remplacez `CORS_ORIGIN` par l'URL réelle de votre site Vercel (ex. `https://asirem.vercel.app`).
+3. Définissez `CRM_ADMIN_PASSWORD` dans le tableau de bord Render (secret, jamais dans le dépôt).
+4. Le disque persistant `/data` conserve `crm.db` entre les redéploiements (selon le plan choisi).
+5. Notez l'URL de l'API, par exemple `https://asirem-api.onrender.com`.
+
+Pour Railway : importez le dépôt, ajoutez un **volume persistant** monté sur `/data`, puis définissez les variables `DB_PATH=/data/crm.db`, `CORS_ORIGIN`, `COOKIE_SAMESITE=None`, `COOKIE_SECURE=1` et `CRM_ADMIN_PASSWORD`. `railway.json` fournit les commandes de build et de démarrage.
+
+### 2. Front sur Vercel
+
+1. Importez le dépôt, framework **Vite** (détection automatique).
+2. Ajoutez la variable d'environnement de build :
+   - `VITE_API_URL` = URL de l'API (ex. `https://asirem-api.onrender.com`, sans slash final).
+3. Redéployez. `vercel.json` gère le rendu SPA pour les URLs comme `/boutique` ou `/produit/...`.
+
+### Variables d'environnement
+
+Toutes les variables sont documentées dans `.env.example`. Côté API : `PORT`, `HOST`, `DB_PATH`, `CORS_ORIGIN`, `COOKIE_SAMESITE`, `COOKIE_SECURE`, `CRM_ADMIN_PASSWORD`. Côté front : `VITE_API_URL`.
+
+> Si le front et l'API sont sur des domaines différents, gardez `COOKIE_SAMESITE=None` et `COOKIE_SECURE=1` sur l'API pour que la session admin soit conservée par le navigateur.
+
 ## Notes
 
 - Les prix des créations sont des valeurs de démonstration cohérentes : le catalogue WooCommerce en direct n'était pas accessible lors de l'adaptation. Ils peuvent être corrigés dans ** administration → Produits**.

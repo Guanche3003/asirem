@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import {
-  all, get, run, now, initDb, getSetting, setSetting,
+  all, get, run, now, initDb, getSetting, setSetting, DB_PATH,
 } from './db.js';
 import {
   hashPassword, verifyPassword, createSession, destroySession, readToken,
@@ -19,11 +19,31 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const PORT = Number(process.env.PORT || 3001);
+const HOST = process.env.HOST || '0.0.0.0';
 
 initDb();
 
 const app = express();
 app.disable('x-powered-by');
+
+// Le front est servi depuis un autre domaine (Vercel) : on autorise les appels
+// avec cookies depuis les origines déclarées dans CORS_ORIGIN.
+const allowedOrigins = String(process.env.CORS_ORIGIN || 'http://127.0.0.1:5173,http://localhost:5173')
+  .split(',').map((value) => value.trim()).filter(Boolean);
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && (allowedOrigins.includes('*') || allowedOrigins.includes(origin))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.setHeader('Vary', 'Origin');
+  }
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  return next();
+});
+
 app.use(express.json({ limit: '1mb' }));
 
 /* ------------------------------------------------------------------ */
@@ -604,7 +624,8 @@ app.use((error, _req, res, _next) => {
   if (!res.headersSent) json(res, { error: 'Erreur interne du serveur.' }, 500);
 });
 
-app.listen(PORT, '127.0.0.1', () => {
-  console.log(`CRM bougier — API prête sur http://127.0.0.1:${PORT}`);
-  console.log(`Base de données : ${path.join(ROOT, 'data', 'crm.db')}`);
+app.listen(PORT, HOST, () => {
+  console.log(`CRM bougier — API prête sur http://${HOST}:${PORT}`);
+  console.log(`Base de données : ${DB_PATH}`);
+  console.log(`Origines autorisées : ${allowedOrigins.join(', ')}`);
 });
