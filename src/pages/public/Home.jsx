@@ -124,27 +124,50 @@ export default function Home() {
             </div>
           </div>
 
-          {nextEvent && (
-            <Link to="/#evenements" className="as-hero-event" aria-label="Voir tous les évènements">
-              <span className="as-hero-event-media">
-                {nextEvent.image_url
-                  ? <img src={nextEvent.image_url} alt="" />
-                  : <span aria-hidden="true">📅</span>}
-                <span className="as-hero-event-day" aria-hidden="true">
-                  <strong>{eventParts.day}</strong>
-                  <small>{eventParts.month}</small>
-                </span>
-              </span>
-              <span className="as-hero-event-copy">
-                <span className="as-hero-event-kicker">✦ {isUpcoming ? 'Prochain rendez-vous' : 'Évènement à découvrir'}</span>
-                <strong className="as-hero-event-title">{nextEvent.title}</strong>
-                <span className="as-hero-event-meta">
-                  {nextEvent.event_date && `📅 ${formatEventDate(nextEvent.event_date)}`}
-                  {nextEvent.location && ` · 📍 ${nextEvent.location}`}
-                </span>
-              </span>
-              <span className="as-hero-event-cta">Tous les évènements <span aria-hidden="true">↓</span></span>
-            </Link>
+          {(featured || nextEvent) && (
+            <div className="as-hero-highlights">
+              {featured && (
+                <Link to={`/produit/${featured.slug}`} className="as-hero-product" aria-label={`Découvrir ${featured.name}`}>
+                  <span className="as-hero-product-media">
+                    {featured.image_url
+                      ? <img src={featured.image_url} alt="" />
+                      : <span aria-hidden="true">🕯️</span>}
+                  </span>
+                  <span className="as-hero-product-copy">
+                    <span className="as-hero-product-kicker">✦ Bougie du moment</span>
+                    <strong className="as-hero-product-title">{featured.name}</strong>
+                    <span className="as-hero-product-meta">{featured.description}</span>
+                  </span>
+                  <span className="as-hero-product-foot">
+                    <strong>{euro(featured.price)}</strong>
+                    <span>Voir la création →</span>
+                  </span>
+                </Link>
+              )}
+
+              {nextEvent && (
+                <Link to="/#evenements" className="as-hero-event" aria-label="Voir tous les évènements">
+                  <span className="as-hero-event-media">
+                    {nextEvent.image_url
+                      ? <img src={nextEvent.image_url} alt="" />
+                      : <span aria-hidden="true">📅</span>}
+                    <span className="as-hero-event-day" aria-hidden="true">
+                      <strong>{eventParts.day}</strong>
+                      <small>{eventParts.month}</small>
+                    </span>
+                  </span>
+                  <span className="as-hero-event-copy">
+                    <span className="as-hero-event-kicker">✦ {isUpcoming ? 'Prochain rendez-vous' : 'Évènement à découvrir'}</span>
+                    <strong className="as-hero-event-title">{nextEvent.title}</strong>
+                    <span className="as-hero-event-meta">
+                      {nextEvent.event_date && `📅 ${formatEventDate(nextEvent.event_date)}`}
+                      {nextEvent.location && ` · 📍 ${nextEvent.location}`}
+                    </span>
+                  </span>
+                  <span className="as-hero-event-cta">Tous les évènements <span aria-hidden="true">↓</span></span>
+                </Link>
+              )}
+            </div>
           )}
         </div>
         <div className="as-bars as-hero-bars" aria-hidden="true">
