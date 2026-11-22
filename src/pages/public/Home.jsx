@@ -281,6 +281,30 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="as-band as-band--custom" id="bougie-custom">
+        <div className="as-section as-custom-callout">
+          <div className="as-custom-callout-copy">
+            <span className="as-kicker">Bougie sur mesure</span>
+            <h2 className="as-section-title">Votre bougie, <em>votre histoire</em></h2>
+            <div className="as-bars" aria-hidden="true"><span /><span /><span /><span /><span /></div>
+            <p className="as-section-text">
+              Parfum, couleur, décoration… et le petit mot qui apparaîtra sur l’étiquette : composez une bougie rien que pour vous ou pour offrir.
+            </p>
+            <Link to="/creer-ma-bougie" className="as-btn-gold">🎨 Créer ma bougie →</Link>
+          </div>
+          <div className="as-custom-callout-visual" aria-hidden="true">
+            <div className="as-custom-candle">
+              <div className="as-custom-candle-wax" />
+              <div className="as-custom-candle-label">
+                <span>💜</span>
+                <strong>Un peu de lumière pour toi</strong>
+                <small>ASIREM COSMÉTIQUES</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="as-band as-band--paper" id="a-propos">
         <div className="as-section">
           <div className="as-about-grid">

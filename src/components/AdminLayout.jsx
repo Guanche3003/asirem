@@ -10,6 +10,7 @@ const NAV = [
   { to: '/admin/produits', label: 'Produits', icon: '🕯️' },
   { to: '/admin/matieres', label: 'Matières premières', icon: '⚗️' },
   { to: '/admin/evenements', label: 'Évènements', icon: '📅' },
+  { to: '/admin/custom', label: 'Bougie customisée', icon: '🎨', badge: 'custom' },
   { section: 'Relations' },
   { to: '/admin/clients', label: 'Clients', icon: '👥' },
   { to: '/admin/fournisseurs', label: 'Fournisseurs', icon: '🚚' },
@@ -25,6 +26,7 @@ export default function AdminLayout() {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState(null);
   const [newContacts, setNewContacts] = useState(0);
+  const [newCustom, setNewCustom] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -32,9 +34,16 @@ export default function AdminLayout() {
       .then((data) => {
         if (!active) return;
         setUser(data.user);
-        return api.get('/contacts').then((res) => {
-          if (active) setNewContacts((res.items || []).filter((c) => c.status === 'nouveau').length);
-        });
+        return Promise.allSettled([api.get('/contacts'), api.get('/custom-requests')])
+          .then(([contacts, custom]) => {
+            if (!active) return;
+            if (contacts.status === 'fulfilled') {
+              setNewContacts((contacts.value.items || []).filter((c) => c.status === 'nouveau').length);
+            }
+            if (custom.status === 'fulfilled') {
+              setNewCustom((custom.value.items || []).filter((c) => c.status === 'nouvelle').length);
+            }
+          });
       })
       .catch(() => { if (active) navigate('/admin/login', { replace: true }); })
       .finally(() => { if (active) setReady(true); });
@@ -54,6 +63,7 @@ export default function AdminLayout() {
     '/admin/produits': ['Produits', 'Catalogue, prix et recettes de fabrication'],
     '/admin/matieres': ['Matières premières', 'Stocks, coûts et fournisseurs'],
     '/admin/evenements': ['Évènements', 'Dates, lieux et photos du site public'],
+    '/admin/custom': ['Bougie customisée', 'Options du configurateur et demandes reçues'],
     '/admin/clients': ['Clients', 'Fiches et coordonnées'],
     '/admin/fournisseurs': ['Fournisseurs', 'Partenaires et coordonnées'],
     '/admin/commandes': ['Commandes', 'Suivi et préparation'],
@@ -76,7 +86,9 @@ export default function AdminLayout() {
             <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => (isActive ? 'active' : '')}>
               <span className="ico">{item.icon}</span>
               <span>{item.label}</span>
-              {item.badge && newContacts > 0 && <span className="pill">{newContacts}</span>}
+              {item.badge && (item.badge === 'custom' ? newCustom : newContacts) > 0 && (
+                <span className="pill">{item.badge === 'custom' ? newCustom : newContacts}</span>
+              )}
             </NavLink>
           ))}
         </nav>

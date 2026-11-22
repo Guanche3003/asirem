@@ -19,6 +19,8 @@ import Orders from './pages/admin/Orders.jsx';
 import Contacts from './pages/admin/Contacts.jsx';
 import Settings from './pages/admin/Settings.jsx';
 import Events from './pages/admin/Events.jsx';
+import AdminCustomizer from './pages/admin/Customizer.jsx';
+import PublicCustomizer from './pages/public/Customizer.jsx';
 
 function NotFound() {
   return (
@@ -44,11 +46,13 @@ export default function App() {
         <Route path="commandes" element={<Orders />} />
         <Route path="contacts" element={<Contacts />} />
         <Route path="evenements" element={<Events />} />
+        <Route path="custom" element={<AdminCustomizer />} />
         <Route path="parametres" element={<Settings />} />
       </Route>
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/boutique" element={<Catalog />} />
+        <Route path="/creer-ma-bougie" element={<PublicCustomizer />} />
         <Route path="/produit/:slug" element={<ProductDetail />} />
         <Route path="/a-propos" element={<About />} />
         <Route path="/contact" element={<Contact />} />

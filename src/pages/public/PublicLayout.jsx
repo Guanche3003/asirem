@@ -7,6 +7,7 @@ export const useSite = () => React.useContext(SiteContext);
 
 const NAV = [
   { to: '/boutique', label: 'Créations' },
+  { to: '/creer-ma-bougie', label: 'Créer ma bougie' },
   { to: '/#galerie', label: 'Photos', external: true },
   { to: '/#evenements', label: 'Évènements', external: true },
   { to: '/a-propos', label: 'Qui suis-je' },
@@ -117,6 +118,7 @@ export default function PublicLayout() {
                 <li><Link to="/">Accueil</Link></li>
                 <li><Link to="/a-propos">Qui suis-je</Link></li>
                 <li><Link to="/boutique">Mes créations</Link></li>
+                <li><Link to="/creer-ma-bougie">Créer ma bougie</Link></li>
                 <li><Link to="/#galerie">Photos</Link></li>
                 <li><Link to="/#evenements">Évènements</Link></li>
                 <li><Link to="/editions-thematiques">Éditions thématiques</Link></li>

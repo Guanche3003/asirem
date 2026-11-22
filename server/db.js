@@ -196,6 +196,38 @@ CREATE TABLE IF NOT EXISTS events (
   updated_at  TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS custom_options (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  category    TEXT NOT NULL DEFAULT 'parfum',
+  name        TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  image_url   TEXT DEFAULT '',
+  icon        TEXT DEFAULT '',
+  extra_price REAL NOT NULL DEFAULT 0,
+  position    INTEGER NOT NULL DEFAULT 0,
+  active      INTEGER NOT NULL DEFAULT 1,
+  created_at  TEXT NOT NULL,
+  updated_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS custom_requests (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  number       TEXT NOT NULL UNIQUE,
+  customer_name TEXT NOT NULL,
+  email        TEXT NOT NULL,
+  phone        TEXT DEFAULT '',
+  selections   TEXT NOT NULL DEFAULT '[]',
+  label_phrase TEXT DEFAULT '',
+  label_emoji  TEXT DEFAULT '',
+  message      TEXT DEFAULT '',
+  price        REAL NOT NULL DEFAULT 0,
+  status       TEXT NOT NULL DEFAULT 'nouvelle',
+  created_at   TEXT NOT NULL,
+  updated_at   TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_custom_options_category ON custom_options(category, position, id);
+CREATE INDEX IF NOT EXISTS idx_custom_requests_status ON custom_requests(status);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
@@ -235,6 +267,9 @@ const DEFAULT_SETTINGS = {
   hero_video: '/videos/fond.webm',
   hero_image: '/galerie/Bougies%20stand.jpg',
   featured_video: '/videos/coffret.mp4',
+  // Configurateur « Créer ma bougie »
+  custom_base_price: '25',
+  custom_intro: 'Choisissez votre parfum, votre couleur et votre décoration, puis écrivez le petit mot qui rendra votre bougie unique.',
 };
 
 const DEFAULT_EVENTS = [
@@ -270,6 +305,43 @@ function seedEvents() {
        VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
       event.title, event.event_date, event.location, event.description, event.image_url,
       timestamp, timestamp,
+    );
+  }
+}
+
+// Options proposées dans le configurateur « Créer ma bougie ».
+// [catégorie, nom, description, image, icône, supplément, ordre]
+const DEFAULT_CUSTOM_OPTIONS = [
+  ['parfum', 'Lavande', 'L’intemporelle sérénité des champs de Provence.', '/galerie/lavande.jpg', '💜', 0, 1],
+  ['parfum', 'Clémentine Monoï', 'L’agrume pétillant et la douceur solaire des îles.', '/galerie/cl%C3%A9mentine%20monoi%20(2).jpg', '🍊', 0, 2],
+  ['parfum', 'Fleur d’oranger', 'Une fragrance florale douce et enveloppante.', '/Lueur.png', '🤍', 0, 3],
+  ['parfum', 'Fruits rouges', 'Des notes gourmandes et réconfortantes.', '/Cl%C3%A9mentine.png', '🍓', 1.5, 4],
+  ['parfum', 'Pamplemousse', 'Une explosion de fraîcheur vive et acidulée.', '/galerie/pamplemousse%20(2).jpg', '🍋', 0, 5],
+  ['parfum', 'Gourmandise de Noël', 'Notes chaleureuses et épicées pour un hiver douillet.', '/galerie/Gourmandise%20de%20noel.jpg', '🎄', 2, 6],
+  ['couleur', 'Naturel / écru', 'La couleur authentique de la cire végétale.', '', '◯', 0, 1],
+  ['couleur', 'Ocre doré', 'Une teinte chaude et lumineuse.', '', '🟡', 0, 2],
+  ['couleur', 'Terracotta', 'Un ton terreux et chaleureux.', '', '🟠', 0, 3],
+  ['couleur', 'Vert sauge', 'Une nuance végétale apaisante.', '', '🟢', 0, 4],
+  ['couleur', 'Rose poudré', 'Une touche douce et délicate.', '', '🌸', 0, 5],
+  ['decoration', 'Fleurs séchées', 'Un bouquet délicat inclus dans la cire.', '', '🌾', 2.5, 1],
+  ['decoration', 'Paillettes dorées', 'Une finition scintillante et festive.', '', '✨', 1.5, 2],
+  ['decoration', 'Zestes d’agrume', 'Des éclats naturels qui parfument la flamme.', '', '🍊', 1.5, 3],
+  ['decoration', 'Cannelle & étoile', 'Une décoration gourmande et épicée.', '', '⭐', 2, 4],
+  ['decoration', 'Botaniques', 'Un assemblage de feuilles et graines naturelles.', '', '🌿', 2.5, 5],
+  ['contenant', 'Pot verre 180 ml', 'Le format classique, à réutiliser sans fin.', '/galerie/lavande.jpg', '🕯️', 0, 1],
+  ['contenant', 'Pot verre 300 ml', 'Une plus grande contenance pour durer plus longtemps.', '/galerie/Bougies%20stand.jpg', '🕯️', 6, 2],
+  ['contenant', 'Coffret cadeau', 'Trois bougies présentées dans une boîte kraft.', '/galerie/Bougies%20stand.jpg', '🎁', 24, 3],
+];
+
+function seedCustomOptions() {
+  if (get('SELECT COUNT(*) AS n FROM custom_options').n > 0) return;
+  const timestamp = now();
+  for (const [category, name, description, image_url, icon, extra_price, position] of DEFAULT_CUSTOM_OPTIONS) {
+    run(
+      `INSERT INTO custom_options
+        (category, name, description, image_url, icon, extra_price, position, active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+      category, name, description, image_url, icon, extra_price, position, timestamp, timestamp,
     );
   }
 }
@@ -436,6 +508,14 @@ function seed() {
   }
 }
 
+// Complète les réglages ajoutés par les versions successives sans écraser
+// les valeurs déjà personnalisées par l'administrateur.
+function seedMissingSettings() {
+  for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
+    run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', key, value);
+  }
+}
+
 export function initDb({ force = false } = {}) {
   if (force) {
     if (db) {
@@ -449,7 +529,9 @@ export function initDb({ force = false } = {}) {
   }
   getDb().exec(SCHEMA);
   seed();
+  seedMissingSettings();
   seedEvents();
+  seedCustomOptions();
   return DB_PATH;
 }
 

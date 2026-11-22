@@ -12,6 +12,7 @@ const KEYS = [
   ['whatsapp', 'Lien WhatsApp'], ['tiktok', 'TikTok'], ['logo', 'Logo (URL)'],
   ['hero_video', 'Vidéo d’accueil (URL)'], ['hero_image', 'Image d’accueil (URL)'],
   ['featured_video', 'Vidéo coup de cœur (URL)'],
+  ['custom_base_price', 'Prix de base — bougie customisée (€)'], ['custom_intro', 'Intro du configurateur'],
   ['currency', 'Devise'], ['vat_rate', 'TVA (%)'], ['margin_coefficient', 'Coefficient prix conseillé'],
 ];
 

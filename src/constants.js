@@ -47,6 +47,31 @@ export const EVENT_IMAGE_CHOICES = [
   { label: 'Coffret', value: '/galerie/Gourmandise de noel.jpg' },
 ];
 
+export const CUSTOM_CATEGORIES = [
+  { value: 'parfum', label: 'Parfums', emoji: '🌸', multiple: false },
+  { value: 'couleur', label: 'Couleurs', emoji: '🎨', multiple: false },
+  { value: 'decoration', label: 'Décorations', emoji: '✨', multiple: true },
+  { value: 'contenant', label: 'Contenants', emoji: '🕯️', multiple: false },
+];
+
+export const CUSTOM_REQUEST_STATUSES = [
+  { value: 'nouvelle', label: 'Nouvelle', tone: 'amber' },
+  { value: 'en_attente', label: 'En attente', tone: 'blue' },
+  { value: 'confirmee', label: 'Confirmée', tone: 'green' },
+  { value: 'realisee', label: 'Réalisée', tone: 'purple' },
+  { value: 'annulee', label: 'Annulée', tone: 'muted' },
+];
+
+export const CUSTOM_IMAGE_CHOICES = [
+  { label: 'Lavande', value: '/galerie/lavande.jpg' },
+  { label: 'Clémentine Monoï', value: '/galerie/cl%C3%A9mentine%20monoi%20(2).jpg' },
+  { label: 'Pamplemousse', value: '/galerie/pamplemousse%20(2).jpg' },
+  { label: 'Gourmandise de Noël', value: '/galerie/Gourmandise%20de%20noel.jpg' },
+  { label: 'Bougies exposées', value: '/galerie/Bougies%20stand.jpg' },
+  { label: 'Stand évènementiel', value: '/galerie/Stand.jpg' },
+  { label: 'Coffret', value: '/galerie/Gourmandise de noel.jpg' },
+];
+
 export const CATEGORY_EMOJI = {
   bougie: '🕯️',
   fondant: '🌸',

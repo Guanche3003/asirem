@@ -180,6 +180,42 @@ function consumeStock(order) {
 
 const STATUSES = ['brouillon', 'confirmee', 'en_preparation', 'expediee', 'livree', 'annulee'];
 const CONTACT_STATUSES = ['nouveau', 'lu', 'repondu', 'archive'];
+const CUSTOM_REQUEST_STATUSES = ['nouvelle', 'en_attente', 'confirmee', 'realisee', 'annulee'];
+const CUSTOM_CATEGORIES = [
+  { value: 'parfum', label: 'Parfum', emoji: '🌸', multiple: false },
+  { value: 'couleur', label: 'Couleur', emoji: '🎨', multiple: false },
+  { value: 'decoration', label: 'Décoration', emoji: '✨', multiple: true },
+  { value: 'contenant', label: 'Contenant', emoji: '🕯️', multiple: false },
+];
+
+function customOptionPublic(row) {
+  return {
+    id: row.id,
+    category: row.category,
+    name: row.name,
+    description: txt(row.description),
+    image_url: txt(row.image_url),
+    icon: txt(row.icon),
+    extra_price: round(row.extra_price),
+  };
+}
+
+function customRequestPublic(row) {
+  let selections = [];
+  try {
+    const parsed = JSON.parse(row.selections || '[]');
+    if (Array.isArray(parsed)) selections = parsed;
+  } catch { /* données historiques */ }
+  const base = round(getSetting('custom_base_price', 25));
+  const extra = selections.reduce((sum, item) => sum + num(item.extra_price), 0);
+  return { ...row, selections, estimated_price: round(base + extra) };
+}
+
+function nextCustomRequestNumber() {
+  const row = get("SELECT number FROM custom_requests WHERE number LIKE 'PERSO-%' ORDER BY id DESC LIMIT 1");
+  const last = row ? int(String(row.number).replace(/\D/g, ''), 0) : 0;
+  return `PERSO-${String(last + 1).padStart(4, '0')}`;
+}
 
 /* ------------------------------------------------------------------ */
 /* Authentification                                                    */
@@ -601,6 +637,88 @@ app.post('/api/events/image', authRequired, (req, res) => {
 });
 
 /* ------------------------------------------------------------------ */
+/* Configurateur « Créer ma bougie » — options (admin)                  */
+/* ------------------------------------------------------------------ */
+
+app.get('/api/custom-options', authRequired, (_req, res) => json(res, {
+  items: all('SELECT * FROM custom_options ORDER BY position ASC, id ASC'),
+  categories: CUSTOM_CATEGORIES,
+}));
+
+const customOptionPayload = (b, existing = {}) => ({
+  category: CUSTOM_CATEGORIES.some((c) => c.value === txt(b.category))
+    ? txt(b.category) : (existing.category || 'parfum'),
+  name: txt(b.name) || existing.name || '',
+  description: txt(b.description),
+  image_url: txt(b.image_url),
+  icon: txt(b.icon),
+  extra_price: round(num(b.extra_price ?? existing.extra_price ?? 0)),
+  position: int(b.position ?? existing.position ?? 0, 0),
+  active: bool(b.active ?? 1),
+});
+
+app.post('/api/custom-options', authRequired, (req, res) => {
+  const values = customOptionPayload(req.body || {});
+  if (!values.name) return json(res, { error: 'Le nom de l’option est obligatoire.' }, 400);
+  const date = now();
+  const result = run(
+    `INSERT INTO custom_options
+      (category, name, description, image_url, icon, extra_price, position, active, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    values.category, values.name, values.description, values.image_url, values.icon,
+    values.extra_price, values.position, values.active, date, date,
+  );
+  return json(res, { ok: true, id: Number(result.lastInsertRowid) }, 201);
+});
+
+app.put('/api/custom-options/:id', authRequired, (req, res) => {
+  const id = int(req.params.id, 0);
+  const existing = get('SELECT * FROM custom_options WHERE id = ?', id);
+  if (!existing) return json(res, { error: 'Option introuvable.' }, 404);
+  const values = customOptionPayload(req.body || {}, existing);
+  if (!values.name) return json(res, { error: 'Le nom de l’option est obligatoire.' }, 400);
+  run(
+    `UPDATE custom_options SET category=?, name=?, description=?, image_url=?, icon=?,
+      extra_price=?, position=?, active=?, updated_at=? WHERE id=?`,
+    values.category, values.name, values.description, values.image_url, values.icon,
+    values.extra_price, values.position, values.active, now(), id,
+  );
+  return json(res, { ok: true });
+});
+
+app.delete('/api/custom-options/:id', authRequired, (req, res) => {
+  run('DELETE FROM custom_options WHERE id = ?', int(req.params.id, 0));
+  return json(res, { ok: true });
+});
+
+/* ------------------------------------------------------------------ */
+/* Configurateur — demandes envoyées par les visiteurs (admin)         */
+/* ------------------------------------------------------------------ */
+
+app.get('/api/custom-requests', authRequired, (_req, res) => json(res, {
+  items: all('SELECT * FROM custom_requests ORDER BY id DESC').map(customRequestPublic),
+  statuses: CUSTOM_REQUEST_STATUSES,
+}));
+
+app.put('/api/custom-requests/:id', authRequired, (req, res) => {
+  const id = int(req.params.id, 0);
+  if (!get('SELECT id FROM custom_requests WHERE id = ?', id)) {
+    return json(res, { error: 'Demande introuvable.' }, 404);
+  }
+  const status = txt(req.body?.status);
+  if (!CUSTOM_REQUEST_STATUSES.includes(status)) {
+    return json(res, { error: 'Statut invalide.' }, 400);
+  }
+  run('UPDATE custom_requests SET status = ?, updated_at = ? WHERE id = ?', status, now(), id);
+  return json(res, { ok: true });
+});
+
+app.delete('/api/custom-requests/:id', authRequired, (req, res) => {
+  run('DELETE FROM custom_requests WHERE id = ?', int(req.params.id, 0));
+  return json(res, { ok: true });
+});
+
+/* ------------------------------------------------------------------ */
 /* Paramètres                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -609,6 +727,7 @@ const PUBLIC_SETTING_KEYS = [
   'zip', 'city', 'siret', 'hours', 'instagram', 'currency', 'vat_rate',
   'legal_name', 'siren', 'vat_number', 'rcs', 'ape', 'website', 'whatsapp',
   'tiktok', 'logo', 'hero_video', 'hero_image', 'featured_video',
+  'custom_base_price', 'custom_intro',
 ];
 
 app.get('/api/settings', authRequired, (_req, res) => {
@@ -644,6 +763,72 @@ app.get('/api/public/events', (_req, res) => json(res, {
      FROM events WHERE active = 1 ORDER BY event_date ASC, id DESC`,
   ),
 }));
+
+app.get('/api/public/custom-options', (_req, res) => {
+  const rows = all(
+    'SELECT * FROM custom_options WHERE active = 1 ORDER BY position ASC, id ASC',
+  );
+  return json(res, {
+    categories: CUSTOM_CATEGORIES.map((category) => ({
+      ...category,
+      items: rows
+        .filter((row) => row.category === category.value)
+        .map(customOptionPublic),
+    })),
+    base_price: round(getSetting('custom_base_price', 25)),
+    intro: getSetting('custom_intro', ''),
+  });
+});
+
+app.post('/api/public/custom-requests', (req, res) => {
+  const b = req.body || {};
+  const customerName = txt(b.customer_name);
+  const email = txt(b.email);
+  if (!customerName || !email) {
+    return json(res, { error: 'Merci de renseigner votre nom et votre e-mail.' }, 400);
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return json(res, { error: 'Adresse e-mail invalide.' }, 400);
+  }
+
+  // Les prix sont recalculés côté serveur : le visiteur ne peut pas modifier le devis.
+  const selections = [];
+  for (const choice of Array.isArray(b.selections) ? b.selections : []) {
+    const option = get('SELECT * FROM custom_options WHERE id = ? AND active = 1', int(choice?.id ?? choice?.option_id, 0));
+    if (!option || !CUSTOM_CATEGORIES.some((c) => c.value === option.category)) continue;
+    if (!CUSTOM_CATEGORIES.find((c) => c.value === option.category).multiple
+      && selections.some((item) => item.category === option.category)) continue;
+    selections.push({
+      id: option.id,
+      category: option.category,
+      name: option.name,
+      extra_price: round(option.extra_price),
+    });
+  }
+  if (!selections.length) {
+    return json(res, { error: 'Choisissez au moins une option pour votre bougie.' }, 400);
+  }
+
+  const base = round(getSetting('custom_base_price', 25));
+  const extra = selections.reduce((sum, item) => sum + num(item.extra_price), 0);
+  const price = round(base + extra);
+  const number = nextCustomRequestNumber();
+  const date = now();
+  run(
+    `INSERT INTO custom_requests
+      (number, customer_name, email, phone, selections, label_phrase, label_emoji, message, price, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'nouvelle', ?, ?)`,
+    number, customerName, email, txt(b.phone), JSON.stringify(selections),
+    txt(b.label_phrase).slice(0, 60), txt(b.label_emoji).slice(0, 12),
+    txt(b.message).slice(0, 2000), price, date, date,
+  );
+  return json(res, {
+    ok: true,
+    number,
+    price,
+    message: 'Votre projet de bougie a bien été envoyé à l’atelier. Merci !',
+  }, 201);
+});
 
 app.get('/api/public/products', (req, res) => {
   const category = txt(req.query.category);
