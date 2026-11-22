@@ -253,15 +253,12 @@
 .as-product-card {
   display: flex; flex-direction: column; background: #fff; border-radius: 16px; overflow: hidden;
   border: 1px solid rgba(212, 168, 83, .25); transition: transform .16s ease, box-shadow .16s ease;
-  aspect-ratio: 480 / 600;
 }
 .as-product-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 .as-product-media {
   aspect-ratio: 4 / 3; display: grid; place-items: center; overflow: hidden;
   background: #f3e4d4; font-size: 3.5rem;
 }
-.as-product-card .as-product-media { aspect-ratio: auto; flex: 1; min-height: 0; }
-.as-product-card .as-product-body { flex: 0 0 auto; }
 .as-product-media img { width: 100%; height: 100%; object-fit: cover; }
 .as-product-body { padding: 1.35rem; display: flex; flex-direction: column; flex: 1; }
 .as-product-body h3 { font-size: 1.3rem; margin: .35rem 0 .6rem; }
