@@ -13,12 +13,39 @@ const EMPTY_LABEL = {
   width_mm: 60, height_mm: 40, text_x: 0, text_y: 0,
 };
 const REQUIRED = ['contenant', 'couleur', 'parfum'];
+const AUTO_ADVANCE_MS = 420;
+
+function StepHeader({ index, total, emoji, title, hint, headingRef, onBack }) {
+  return (
+    <div className="as-custom-step-head">
+      <div className="as-custom-step-copy">
+        <span className="as-custom-step-count">Étape {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}</span>
+        <h2 ref={headingRef} tabIndex={-1}>
+          {emoji && <span aria-hidden="true">{emoji}</span>} {title}
+        </h2>
+        {hint && <p>{hint}</p>}
+      </div>
+      {onBack && (
+        <button
+          type="button"
+          className="as-custom-back"
+          onClick={onBack}
+          aria-label="Étape précédente"
+          title="Étape précédente"
+        >
+          <span aria-hidden="true">←</span>
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function Customizer() {
   const { settings } = useSite();
   const reduceMotion = useReducedMotion();
   const headingRef = useRef(null);
   const labelExportRef = useRef(null);
+  const advanceRef = useRef(null);
 
   const [data, setData] = useState({ categories: [], base_price: 0, intro: '', label: {} });
   const [loading, setLoading] = useState(true);
@@ -95,6 +122,23 @@ export default function Customizer() {
     return () => clearTimeout(timer);
   }, [toast]);
 
+  useEffect(() => () => clearTimeout(advanceRef.current), []);
+
+  const goToStep = (index) => {
+    clearTimeout(advanceRef.current);
+    advanceRef.current = null;
+    setStep(index);
+    setError('');
+  };
+
+  const scheduleAdvance = () => {
+    clearTimeout(advanceRef.current);
+    advanceRef.current = setTimeout(() => {
+      advanceRef.current = null;
+      setStep((value) => Math.min(steps.length - 1, value + 1));
+    }, reduceMotion ? 120 : AUTO_ADVANCE_MS);
+  };
+
   const toggle = (category, option) => {
     const wasSelected = (selection[category.value] || []).includes(option.id);
     setSelection((current) => {
@@ -108,6 +152,8 @@ export default function Customizer() {
       return { ...current, [category.value]: wasSelected ? [] : [option.id] };
     });
     setToast({ id: Date.now(), text: wasSelected ? `« ${option.name} » retiré` : `« ${option.name} » ajouté` });
+    // Un nouveau choix mène directement à l'étape suivante ; un retrait reste sur place.
+    if (!wasSelected) scheduleAdvance();
   };
 
   const removeOption = (item) => setSelection((current) => ({
@@ -126,8 +172,7 @@ export default function Customizer() {
     if (!canContinue) return;
     // On capture l'étiquette avant de démonter l'éditeur Konva.
     if (current?.type === 'label') setLabelImage(labelExportRef.current?.() || '');
-    setStep((value) => Math.min(steps.length - 1, value + 1));
-    setError('');
+    goToStep(Math.min(steps.length - 1, step + 1));
   };
 
   const whatsappHref = () => {
@@ -156,7 +201,7 @@ export default function Customizer() {
         selections: selectedOptions.map((item) => ({ id: item.id })),
         label: effectiveLabel,
         preview_image: previewImage,
-        label_image: labelImage,
+        label_image: exportedLabel,
       });
       setSuccess({ ...result, previewImage, labelImage: exportedLabel, snapshot: config, total: price });
     } catch (e) {
@@ -168,7 +213,7 @@ export default function Customizer() {
 
   const reset = () => {
     setSelection({}); setLabel(EMPTY_LABEL); setForm(EMPTY_FORM); setLabelImage('');
-    setSuccess(null); setError(''); setStep(0); setToast(null);
+    setSuccess(null); setToast(null); goToStep(0);
   };
 
   const renderStep = () => {
@@ -176,15 +221,15 @@ export default function Customizer() {
       const category = current.category;
       return (
         <>
-          <div className="as-custom-step-head">
-            <span className="as-custom-step-num">{String(step + 1).padStart(2, '0')}</span>
-            <div>
-              <h2 ref={headingRef} tabIndex={-1}>
-                <span aria-hidden="true">{category.emoji}</span> {category.step || category.label}
-              </h2>
-              <p>{category.hint || (category.multiple ? 'Plusieurs choix possibles.' : 'Choisissez une option.')}</p>
-            </div>
-          </div>
+          <StepHeader
+            index={step}
+            total={steps.length}
+            emoji={category.emoji}
+            title={category.step || category.label}
+            hint={category.hint || 'Un clic sur une option vous mène à la suite.'}
+            headingRef={headingRef}
+            onBack={step > 0 ? () => goToStep(step - 1) : undefined}
+          />
           <div className="as-option-grid">
             {category.items.map((option) => {
               const active = (selection[category.value] || []).includes(option.id);
@@ -202,6 +247,7 @@ export default function Customizer() {
                     {option.image_url
                       ? <img src={option.image_url} alt="" loading="lazy" />
                       : <span>{option.icon || '✦'}</span>}
+                    <span className="as-option-next">→</span>
                     {active && (
                       <motion.span
                         className="as-option-check"
@@ -210,14 +256,25 @@ export default function Customizer() {
                       >✓</motion.span>
                     )}
                   </span>
-                  <strong>{option.name}</strong>
-                  {option.description && <small>{option.description}</small>}
-                  {option.extra_price > 0 && <span className="as-option-price">+ {euro(option.extra_price)}</span>}
-                  {option.availability === 'sur_commande' && <span className="as-option-availability">Sur commande</span>}
+                  <span className="as-option-body">
+                    <strong>{option.name}</strong>
+                    {option.description && <small>{option.description}</small>}
+                  </span>
+                  {(option.extra_price > 0 || option.availability === 'sur_commande') && (
+                    <span className="as-option-meta">
+                      {option.extra_price > 0 && <span className="as-option-price">+ {euro(option.extra_price)}</span>}
+                      {option.availability === 'sur_commande' && <span className="as-option-availability">Sur commande</span>}
+                    </span>
+                  )}
                 </motion.button>
               );
             })}
           </div>
+          <p className="as-custom-hint as-custom-hint--inline">
+            {category.multiple
+              ? 'Pour en ajouter un autre, revenez avec la flèche ←.'
+              : 'Vous pourrez toujours revenir avec la flèche ← pour changer votre choix.'}
+          </p>
         </>
       );
     }
@@ -225,13 +282,15 @@ export default function Customizer() {
     if (current?.type === 'label') {
       return (
         <>
-          <div className="as-custom-step-head">
-            <span className="as-custom-step-num">{String(step + 1).padStart(2, '0')}</span>
-            <div>
-              <h2 ref={headingRef} tabIndex={-1}>✍️ Votre étiquette</h2>
-              <p>Écrivez le petit mot qui rendra votre bougie unique, et réglez son apparence.</p>
-            </div>
-          </div>
+          <StepHeader
+            index={step}
+            total={steps.length}
+            emoji="✍️"
+            title="Votre étiquette"
+            hint="Écrivez le petit mot qui rendra votre bougie unique, et réglez son apparence."
+            headingRef={headingRef}
+            onBack={step > 0 ? () => goToStep(step - 1) : undefined}
+          />
           <LabelEditor
             categories={data.categories}
             settings={data.label}
@@ -240,19 +299,31 @@ export default function Customizer() {
             exportRef={labelExportRef}
             shopName={settings.shop_name}
           />
+          <div className="as-custom-step-actions">
+            <button
+              type="button"
+              className="as-btn-outline as-btn-outline--dark"
+              onClick={goNext}
+              disabled={!canContinue}
+            >
+              Continuer <span aria-hidden="true">→</span>
+            </button>
+          </div>
         </>
       );
     }
 
     return (
       <>
-        <div className="as-custom-step-head">
-          <span className="as-custom-step-num">{String(step + 1).padStart(2, '0')}</span>
-          <div>
-            <h2 ref={headingRef} tabIndex={-1}>💌 Envoyer votre projet</h2>
-            <p>Votre configuration est prête. L’atelier vous recontactera pour la finaliser.</p>
-          </div>
-        </div>
+        <StepHeader
+          index={step}
+          total={steps.length}
+          emoji="💌"
+          title="Envoyer votre projet"
+          hint="Votre configuration est prête. L’atelier vous recontactera pour la finaliser."
+          headingRef={headingRef}
+          onBack={step > 0 ? () => goToStep(step - 1) : undefined}
+        />
         <form className="as-custom-form as-contact-form" onSubmit={submit}>
           {error && <p className="alert alert-error" role="alert">{error}</p>}
           <div className="form-grid">
@@ -333,23 +404,6 @@ export default function Customizer() {
           </motion.div>
         ) : (
           <>
-            <div className="as-custom-progress" aria-label={`Étape ${step + 1} sur ${steps.length}`}>
-              {steps.map((item, index) => (
-                <button
-                  type="button"
-                  key={item.key}
-                  className={`as-custom-progress-step${index === step ? ' is-current' : ''}${index < step ? ' is-done' : ''}`}
-                  onClick={() => index <= step && setStep(index)}
-                  disabled={index > step}
-                  aria-current={index === step ? 'step' : undefined}
-                  title={item.category?.label || (item.type === 'label' ? 'Étiquette' : 'Envoi')}
-                >
-                  <span>{index < step ? '✓' : index + 1}</span>
-                  <small>{item.category?.label || (item.type === 'label' ? 'Étiquette' : 'Envoi')}</small>
-                </button>
-              ))}
-            </div>
-
             <div className="as-custom-layout">
               <div className="as-custom-main">
                 <motion.div
@@ -362,21 +416,6 @@ export default function Customizer() {
                   {renderStep()}
                 </motion.div>
 
-                <div className="as-custom-nav">
-                  {step > 0 && (
-                    <button type="button" className="as-btn-outline as-btn-outline--dark" onClick={() => setStep((value) => value - 1)}>
-                      ← Retour
-                    </button>
-                  )}
-                  {step < steps.length - 1 && (
-                    <button type="button" className="as-btn-gold" onClick={goNext} disabled={!canContinue}>
-                      Continuer →
-                    </button>
-                  )}
-                </div>
-                {!canContinue && current?.type === 'option' && (
-                  <p className="as-custom-hint">Choisissez une option pour continuer.</p>
-                )}
               </div>
 
               <aside className="as-custom-summary" aria-label="Récapitulatif de votre bougie">

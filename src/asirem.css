@@ -437,41 +437,58 @@
   gap: 2.5rem; align-items: start;
 }
 .as-custom-steps { display: flex; flex-direction: column; gap: 2.75rem; }
-.as-custom-step-head { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1.25rem; }
-.as-custom-step-num {
-  font-family: var(--font-display); font-size: 1.7rem; line-height: 1;
-  color: var(--as-gold-dark); border-bottom: 2px solid var(--as-gold); padding-bottom: .35rem;
+.as-custom-step-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; }
+.as-custom-step-copy { min-width: 0; }
+.as-custom-step-count {
+  display: inline-block; margin-bottom: .4rem; font-size: .68rem; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--as-gold-dark);
 }
 .as-custom-step h2 { font-size: 1.5rem; margin: 0 0 .3rem; }
+.as-custom-step-head h2 { font-size: 1.55rem; margin: 0 0 .3rem; }
+.as-custom-step h2:focus { outline: none; }
 .as-custom-step-head p { color: var(--ink-soft); font-size: .85rem; margin: 0; }
-.as-option-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 1rem; }
-.as-option-card {
-  display: flex; flex-direction: column; gap: .4rem; text-align: left; cursor: pointer;
-  padding: .7rem; border-radius: 14px; background: #fff;
-  border: 1px solid rgba(56, 32, 17, .14); color: var(--ink);
-  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+.as-custom-back {
+  flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+  border: 1px solid rgba(56, 32, 17, .18); background: #fff; color: var(--as-brown);
+  display: grid; place-items: center; font-size: 1rem;
+  transition: background .16s ease, border-color .16s ease, transform .16s ease;
 }
-.as-option-card:hover { transform: translateY(-2px); border-color: var(--as-gold-dark); }
+.as-custom-back:hover { background: #fffaf3; border-color: var(--as-gold-dark); transform: translateX(-2px); }
+.as-option-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .8rem; }
+.as-option-card {
+  display: flex; flex-direction: column; gap: .45rem; text-align: left; cursor: pointer;
+  padding: .55rem .55rem .7rem; border-radius: 14px; background: #fdfaf7;
+  border: 1px solid rgba(56, 32, 17, .1); color: var(--ink);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.as-option-card:hover { transform: translateY(-2px); border-color: var(--as-gold-dark); background: #fff; box-shadow: 0 8px 20px rgba(56, 32, 17, .08); }
 .as-option-card.is-selected {
   border-color: var(--as-gold-dark); background: #fffaf3;
   box-shadow: 0 0 0 2px rgba(212, 168, 83, .22);
 }
 .as-option-media {
-  position: relative; height: 100px; border-radius: 10px; overflow: hidden;
-  background: #f3e4d4; display: grid; place-items: center; font-size: 2.3rem;
+  position: relative; height: 96px; border-radius: 10px; overflow: hidden;
+  background: #f3e4d4; display: grid; place-items: center; font-size: 2.1rem;
 }
 .as-option-media img { width: 100%; height: 100%; object-fit: cover; }
+.as-option-next {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: rgba(56, 32, 17, .28); color: #fff; font-size: 1.4rem;
+  opacity: 0; transition: opacity .16s ease;
+}
+.as-option-card:hover .as-option-next, .as-option-card:focus-visible .as-option-next { opacity: 1; }
+.as-option-card.is-selected .as-option-next { display: none; }
 .as-option-check {
-  position: absolute; top: .4rem; right: .4rem; width: 24px; height: 24px;
+  position: absolute; z-index: 1; top: .4rem; right: .4rem; width: 24px; height: 24px;
   border-radius: 50%; background: var(--as-brown); color: #fff;
   display: grid; place-items: center; font-size: .8rem;
 }
-.as-option-card strong { font-size: .9rem; }
-.as-option-card small { font-size: .74rem; color: var(--ink-soft); line-height: 1.45; }
-.as-option-price {
-  align-self: flex-start; font-size: .7rem; font-weight: 700; color: var(--as-brown-soft);
-  background: rgba(243, 203, 171, .38); padding: .15rem .55rem; border-radius: 999px;
-}
+.as-option-body { display: flex; flex-direction: column; gap: .2rem; padding: 0 .15rem; }
+.as-option-card strong { font-size: .88rem; line-height: 1.25; }
+.as-option-card small { font-size: .72rem; color: var(--ink-soft); line-height: 1.4; }
+.as-option-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; padding: 0 .15rem; }
+.as-option-price { font-size: .68rem; font-weight: 700; color: var(--as-brown-soft); }
+.as-option-card.is-selected .as-option-price { color: var(--as-olive); }
 .as-label-form { display: grid; grid-template-columns: 1.4fr .8fr; gap: 1.5rem; }
 .as-label-form .field small { display: block; margin-top: .35rem; }
 .as-emoji-picker { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
@@ -536,31 +553,14 @@
 .as-custom-whatsapp:hover { text-decoration: underline; }
 
 /* ------------------ Configurateur immersif (étapes + rendu) ------------ */
-.as-custom-progress { display: flex; gap: .4rem; overflow-x: auto; padding-bottom: .8rem; margin-bottom: 2rem; scrollbar-width: thin; }
-.as-custom-progress-step {
-  flex: 0 0 auto; display: flex; align-items: center; gap: .45rem; padding: .4rem .8rem;
-  border-radius: 999px; border: 1px solid rgba(56, 32, 17, .14); background: #fff;
-  color: var(--ink-soft); cursor: pointer; font-size: .78rem;
-  transition: background .18s ease, border-color .18s ease, color .18s ease;
-}
-.as-custom-progress-step span {
-  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
-  background: rgba(56, 32, 17, .08); font-size: .7rem; font-weight: 700;
-}
-.as-custom-progress-step small { white-space: nowrap; }
-.as-custom-progress-step.is-current { border-color: var(--as-gold-dark); background: #fffaf3; color: var(--as-brown); }
-.as-custom-progress-step.is-current span { background: var(--as-brown); color: #fff; }
-.as-custom-progress-step.is-done span { background: var(--as-gold); color: var(--as-brown); }
-.as-custom-progress-step:disabled { cursor: default; opacity: .5; }
 .as-custom-main { min-width: 0; }
 .as-custom-panel {
   background: #fff; border: 1px solid rgba(56, 32, 17, .1); border-radius: 20px;
   padding: 1.75rem; box-shadow: 0 12px 40px rgba(56, 32, 17, .05);
 }
-.as-custom-panel h2:focus { outline: none; }
-.as-custom-nav { display: flex; justify-content: space-between; gap: 1rem; margin-top: 1.5rem; }
-.as-custom-nav .as-btn-gold { margin-left: auto; }
-.as-custom-hint { font-size: .8rem; color: var(--as-brown-soft); margin-top: .8rem; }
+.as-custom-step-actions { display: flex; justify-content: flex-end; margin-top: 1.25rem; }
+.as-custom-hint { font-size: .78rem; color: var(--ink-faint); margin-top: .9rem; }
+.as-custom-hint--inline { margin-top: .75rem; text-align: center; }
 .as-option-availability { font-size: .64rem; color: var(--as-olive); font-weight: 700; }
 .as-custom-remove {
   margin-left: .4rem; padding: 0 .2rem; border: 0; background: none;
@@ -680,17 +680,17 @@
     width: 100%; flex-direction: row; justify-content: space-between; align-items: center;
   }
   .as-label-form { grid-template-columns: 1fr; }
-  .as-option-grid { grid-template-columns: repeat(2, 1fr); }
+  .as-option-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+  .as-option-media { height: 78px; font-size: 1.8rem; }
   .as-custom-callout-visual { min-height: 260px; }
   .as-custom-panel { padding: 1.15rem; }
-  .as-custom-progress-step small { display: none; }
-  .as-custom-progress-step { padding: .3rem .45rem; }
+  .as-custom-step-head h2 { font-size: 1.35rem; }
+  .as-custom-back { width: 30px; height: 30px; }
   .as-preview-stage { min-height: 250px; }
   .as-preview-candle { width: min(180px, 66%); }
-  .as-custom-nav .as-btn-gold, .as-custom-nav .as-btn-outline { padding: .7rem 1rem; font-size: .82rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .as-live-dot { animation: none; }
-  .as-preview-label-phrase, .as-custom-progress-step, .as-option-card { transition: none; }
+  .as-preview-label-phrase, .as-option-card, .as-option-next, .as-custom-back { transition: none; }
 }
