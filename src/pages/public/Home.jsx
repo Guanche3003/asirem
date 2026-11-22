@@ -12,6 +12,16 @@ function formatEventDate(value) {
     .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+function eventDateParts(value) {
+  const parts = String(value || '').split('-');
+  if (parts.length !== 3 || !parts.every((part) => /^\d+$/.test(part))) return { day: '—', month: '' };
+  const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  return {
+    day: date.toLocaleDateString('fr-FR', { day: '2-digit' }),
+    month: date.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '').toUpperCase(),
+  };
+}
+
 export default function Home() {
   const { settings } = useSite();
   const location = useLocation();
@@ -53,6 +63,11 @@ export default function Home() {
     || products[0];
   const latest = products.filter((p) => p.id !== featured?.id).slice(0, 2);
 
+  const today = new Date().toISOString().slice(0, 10);
+  const nextEvent = events.find((event) => !event.event_date || event.event_date >= today) || events[0];
+  const isUpcoming = nextEvent && (!nextEvent.event_date || nextEvent.event_date >= today);
+  const eventParts = eventDateParts(nextEvent?.event_date);
+
   const subscribe = async (event) => {
     event.preventDefault();
     try {
@@ -81,34 +96,95 @@ export default function Home() {
           <source src={settings.hero_video || '/videos/fond.webm'} type="video/webm" />
         </video>
         <div className="as-hero-overlay" aria-hidden="true" />
-        <div className="as-hero-content">
-          <span className="as-hero-badge">✦ Artisan créateur de bougies</span>
-          <h1>
-            Des <em>bougies uniques</em>,<br />
-            façonnées à la main<br />
-            pour sublimer vos instants.
-          </h1>
-          <p className="as-hero-lead">
-            {settings.description || 'Bougies artisanales et parfums soignés conçus pour sublimer votre quotidien.'}
-          </p>
-          <div className="as-hero-actions">
-            <Link to="/boutique" className="as-btn-gold">Accéder à la boutique →</Link>
-            <Link to="/a-propos" className="as-btn-outline">Découvrir mon histoire</Link>
-            <a href={settings.whatsapp || 'https://wa.me/33656695112'} target="_blank" rel="noopener noreferrer" className="as-btn-outline">
-              💬 Me contacter
-            </a>
+        <div className="as-hero-inner">
+          <div className="as-hero-content">
+            <span className="as-hero-badge">✦ Artisan créateur de bougies</span>
+            <h1>
+              Des <em>bougies uniques</em>,<br />
+              façonnées à la main<br />
+              pour sublimer vos instants.
+            </h1>
+            <p className="as-hero-lead">
+              {settings.description || 'Bougies artisanales et parfums soignés conçus pour sublimer votre quotidien.'}
+            </p>
+            <div className="as-hero-actions">
+              <Link to="/boutique" className="as-btn-gold">Accéder à la boutique →</Link>
+              <Link to="/a-propos" className="as-btn-outline">Découvrir mon histoire</Link>
+              <a href={settings.whatsapp || 'https://wa.me/33656695112'} target="_blank" rel="noopener noreferrer" className="as-btn-outline">
+                💬 Me contacter
+              </a>
+            </div>
+            <div className="as-hero-trust">
+              <span>✦ Parfum de Grasse</span><i aria-hidden="true" />
+              <span>✦ 100 % Naturel</span><i aria-hidden="true" />
+              <span>🌿 Éco-responsable</span>
+            </div>
+            <div className="as-rating">
+              <span aria-hidden="true">★ ★ ★ ★ ★</span> Trustpilot <small>5/5</small>
+            </div>
           </div>
-          <div className="as-hero-trust">
-            <span>✦ Parfum de Grasse</span><i aria-hidden="true" />
-            <span>✦ 100 % Naturel</span><i aria-hidden="true" />
-            <span>🌿 Éco-responsable</span>
-          </div>
-          <div className="as-rating">
-            <span aria-hidden="true">★ ★ ★ ★ ★</span> Trustpilot <small>5/5</small>
-          </div>
+
+          {nextEvent && (
+            <Link to="/#evenements" className="as-hero-event" aria-label="Voir tous les évènements">
+              <span className="as-hero-event-media">
+                {nextEvent.image_url
+                  ? <img src={nextEvent.image_url} alt="" />
+                  : <span aria-hidden="true">📅</span>}
+                <span className="as-hero-event-day" aria-hidden="true">
+                  <strong>{eventParts.day}</strong>
+                  <small>{eventParts.month}</small>
+                </span>
+              </span>
+              <span className="as-hero-event-copy">
+                <span className="as-hero-event-kicker">✦ {isUpcoming ? 'Prochain rendez-vous' : 'Évènement à découvrir'}</span>
+                <strong className="as-hero-event-title">{nextEvent.title}</strong>
+                <span className="as-hero-event-meta">
+                  {nextEvent.event_date && `📅 ${formatEventDate(nextEvent.event_date)}`}
+                  {nextEvent.location && ` · 📍 ${nextEvent.location}`}
+                </span>
+              </span>
+              <span className="as-hero-event-cta">Tous les évènements <span aria-hidden="true">↓</span></span>
+            </Link>
+          )}
         </div>
         <div className="as-bars as-hero-bars" aria-hidden="true">
           <span /><span /><span /><span /><span /><span /><span />
+        </div>
+      </section>
+
+      <section className="as-band as-band--paper as-events-band" id="evenements">
+        <div className="as-section">
+          <div className="as-section-head">
+            <span className="as-kicker">Évènements</span>
+            <h2 className="as-section-title">Retrouvez-moi <em>en vrai</em></h2>
+            <div className="as-bars" aria-hidden="true"><span /><span /><span /><span /><span /></div>
+            <p className="as-section-text">
+              Marchés, salons et ateliers : voici les prochaines occasions de découvrir les bougies ASIREM et de repartir avec votre parfum préféré.
+            </p>
+          </div>
+          {events.length > 0 ? (
+            <div className="as-events-grid">
+              {events.map((event) => (
+                <article className="as-event-card" key={event.id}>
+                  <div className="as-event-media">
+                    {event.image_url
+                      ? <img src={event.image_url} alt={event.title} loading="lazy" />
+                      : <span aria-hidden="true">📅</span>}
+                  </div>
+                  <div className="as-event-body">
+                    <time className="as-event-date" dateTime={event.event_date || undefined}>
+                      {formatEventDate(event.event_date)}
+                    </time>
+                    <h3>{event.title}</h3>
+                    {event.location && <p className="as-event-location">📍 {event.location}</p>}
+                    {event.description && <p className="as-event-desc">{event.description}</p>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="as-empty"><p>Aucun évènement annoncé pour le moment. Revenez bientôt !</p></div>
+          )}
         </div>
       </section>
 
@@ -248,42 +324,6 @@ export default function Home() {
           </div>
         )}
       </dialog>
-
-      <section className="as-band as-band--paper" id="evenements">
-        <div className="as-section">
-          <div className="as-section-head">
-            <span className="as-kicker">Évènements</span>
-            <h2 className="as-section-title">Retrouvez-moi <em>en vrai</em></h2>
-            <div className="as-bars" aria-hidden="true"><span /><span /><span /><span /><span /></div>
-            <p className="as-section-text">
-              Marchés, salons et ateliers : voici les prochaines occasions de découvrir les bougies ASIREM et de repartir avec votre parfum préféré.
-            </p>
-          </div>
-          {events.length > 0 ? (
-            <div className="as-events-grid">
-              {events.map((event) => (
-                <article className="as-event-card" key={event.id}>
-                  <div className="as-event-media">
-                    {event.image_url
-                      ? <img src={event.image_url} alt={event.title} loading="lazy" />
-                      : <span aria-hidden="true">📅</span>}
-                  </div>
-                  <div className="as-event-body">
-                    <time className="as-event-date" dateTime={event.event_date || undefined}>
-                      {formatEventDate(event.event_date)}
-                    </time>
-                    <h3>{event.title}</h3>
-                    {event.location && <p className="as-event-location">📍 {event.location}</p>}
-                    {event.description && <p className="as-event-desc">{event.description}</p>}
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="as-empty"><p>Aucun évènement annoncé pour le moment. Revenez bientôt !</p></div>
-          )}
-        </div>
-      </section>
 
       <section className="as-band as-band--soft" id="temoignages">
         <div className="as-section">
