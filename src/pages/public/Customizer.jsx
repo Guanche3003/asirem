@@ -302,7 +302,7 @@ export default function Customizer() {
           <div className="as-custom-step-actions">
             <button
               type="button"
-              className="as-btn-outline as-btn-outline--dark"
+              className="as-btn-outline as-btn-outline--dark as-ui-btn as-ui-btn--outline"
               onClick={goNext}
               disabled={!canContinue}
             >
@@ -344,7 +344,7 @@ export default function Customizer() {
             <label htmlFor="custom-message">Une précision ?</label>
             <textarea id="custom-message" value={form.message} onChange={updateForm('message')} placeholder="Quantité, occasion, date souhaitée…" rows="3" />
           </div>
-          <button type="submit" className="as-btn-gold" disabled={submitting} aria-busy={submitting}>
+          <button type="submit" className="as-btn-gold as-ui-btn as-ui-btn--primary" disabled={submitting} aria-busy={submitting}>
             {submitting ? 'Envoi en cours…' : 'Envoyer mon projet →'}
           </button>
         </form>
@@ -369,7 +369,7 @@ export default function Customizer() {
         ) : loadError ? (
           <div className="as-empty">
             <p>Impossible de charger les options : {loadError}</p>
-            <button type="button" className="as-btn-gold" onClick={load}>Réessayer</button>
+            <button type="button" className="as-btn-gold as-ui-btn as-ui-btn--primary" onClick={load}>Réessayer</button>
           </div>
         ) : success ? (
           <motion.div
@@ -395,11 +395,11 @@ export default function Customizer() {
             <p className="as-success-price">Prix estimé : <strong>{euro(success.price)}</strong></p>
             <div className="as-success-actions">
               {success.labelImage && (
-                <button type="button" className="as-btn-outline as-btn-outline--dark" onClick={() => downloadDataUrl(success.labelImage, `etiquette-${success.number}.png`)}>
+                <button type="button" className="as-btn-outline as-btn-outline--dark as-ui-btn as-ui-btn--outline" onClick={() => downloadDataUrl(success.labelImage, `etiquette-${success.number}.png`)}>
                   ⬇ Télécharger l’étiquette
                 </button>
               )}
-              <button type="button" className="as-btn-gold" onClick={reset}>Créer une autre bougie</button>
+              <button type="button" className="as-btn-gold as-ui-btn as-ui-btn--primary" onClick={reset}>Créer une autre bougie</button>
             </div>
           </motion.div>
         ) : (

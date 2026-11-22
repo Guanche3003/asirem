@@ -109,7 +109,7 @@ export default function LabelEditor({ categories = [], settings = {}, value = {}
         </p>
         <button
           type="button"
-          className="as-btn-outline as-btn-outline--dark"
+          className="as-btn-outline as-btn-outline--dark as-ui-btn as-ui-btn--outline"
           onClick={() => downloadDataUrl(exportRef?.current?.(), `etiquette-${(phrase || 'asirem').slice(0, 24)}.png`)}
         >
           ⬇ Télécharger l’étiquette (PNG HD)
