@@ -41,7 +41,7 @@ Identifiants de démonstration : `admin` / `Atelier2026!`.
 ### Site public dynamique
 
 - Accueil ASIREM : vidéo hero avec cartes « bougie du moment » et « prochain rendez-vous », section évènements juste dessous, badge « Artisan créateur de bougies », valeurs, coffret vidéo, nouveautés, galerie, témoignages et newsletter.
-- Boutique avec filtres par catégorie, prix et fiches produits issues du CRM.
+- Boutique avec filtres par catégorie, prix et fiches produits issues du CRM (cartes produits au format portrait 480 × 600).
 - Fiche produit avec image, description, poids, durée de diffusion et commande WhatsApp.
 - Page « Qui suis-je » avec l'histoire de Syphax et les photos de l'atelier.
 - Page contact avec formulaire enregistré dans le CRM.
