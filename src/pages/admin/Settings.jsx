@@ -13,6 +13,8 @@ const KEYS = [
   ['hero_video', 'Vidéo d’accueil (URL)'], ['hero_image', 'Image d’accueil (URL)'],
   ['featured_video', 'Vidéo coup de cœur (URL)'],
   ['custom_base_price', 'Prix de base — bougie customisée (€)'], ['custom_intro', 'Intro du configurateur'],
+  ['custom_label_width_mm', 'Étiquette — largeur (mm)'], ['custom_label_height_mm', 'Étiquette — hauteur (mm)'],
+  ['custom_label_max_chars', 'Étiquette — nombre de caractères max'],
   ['currency', 'Devise'], ['vat_rate', 'TVA (%)'], ['margin_coefficient', 'Coefficient prix conseillé'],
 ];
 

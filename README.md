@@ -42,7 +42,7 @@ Identifiants de démonstration : `admin` / `Atelier2026!`.
 
 - Accueil ASIREM : vidéo hero avec cartes « bougie du moment » et « prochain rendez-vous », section évènements juste dessous, badge « Artisan créateur de bougies », valeurs, coffret vidéo, nouveautés, galerie, témoignages et newsletter.
 - Boutique avec filtres par catégorie, prix et fiches produits issues du CRM.
-- Rubrique « Créer ma bougie » (`/creer-ma-bougie`) : choix des parfums, couleurs, décorations et contenants, phrase et emoji sur l’étiquette, aperçu en direct, prix estimé et envoi du projet à l’atelier (ou reprise sur WhatsApp).
+- Rubrique « Créer ma bougie » (`/creer-ma-bougie`) : parcours animé étape par étape (contenant, couleur de cire, parfum, décorations, accessoires, finition, étiquette, typographie, couleur du texte, emoji, coordonnées). Aperçu photographique 2D en temps réel avec calques, animations de sélection, mini-éditeur d’étiquette Konva (police, couleur, emoji, position, export PNG HD) et envoi du projet à l’atelier (ou reprise sur WhatsApp).
 - Fiche produit avec image, description, poids, durée de diffusion et commande WhatsApp.
 - Page « Qui suis-je » avec l'histoire de Syphax et les photos de l'atelier.
 - Page contact avec formulaire enregistré dans le CRM.
@@ -59,8 +59,9 @@ Identifiants de démonstration : `admin` / `Atelier2026!`.
 - Commandes avec déduction automatique du stock à l'expédition.
 - Messages reçus depuis le site public.
 - Évènements : titre, date, lieu, description et photo, avec ajout/suppression et affichage en ligne ou masqué.
-- « Bougie customisée » : ajout/retrait des options (parfum, couleur, décoration, contenant), supplément de prix, ordre d’affichage, et suivi des demandes envoyées par les visiteurs avec statut.
-- Paramètres boutique : identité, légal, contact, réseaux, logo, vidéos, textes et prix de base de la bougie personnalisée.
+- « Bougie customisée » : CRUD des 10 catégories d’options (contenant, couleur, parfum, décoration, accessoire, finition, modèle d’étiquette, typographie, couleur du texte, emoji) avec nom, description, image/icône, supplément, disponibilité (disponible / sur commande / indisponible), statut, ordre et métadonnées de rendu. Aucune option n’est codée en dur côté visiteur.
+- Suivi des projets personnalisés : configuration complète structurée, aperçu final et étiquette HD enregistrés avec la demande ; transformation en commande du CRM en un clic (aucun système parallèle), avec prix recalculé côté serveur.
+- Paramètres boutique : identité, légal, contact, réseaux, logo, vidéos, textes, prix de base et dimensions/limite de caractères de l’étiquette personnalisée.
 
 ## Scripts
 

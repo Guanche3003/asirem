@@ -181,12 +181,27 @@ function consumeStock(order) {
 const STATUSES = ['brouillon', 'confirmee', 'en_preparation', 'expediee', 'livree', 'annulee'];
 const CONTACT_STATUSES = ['nouveau', 'lu', 'repondu', 'archive'];
 const CUSTOM_REQUEST_STATUSES = ['nouvelle', 'en_attente', 'confirmee', 'realisee', 'annulee'];
+// ordre = ordre des étapes du configurateur ; toutes ces catégories sont administrables.
 const CUSTOM_CATEGORIES = [
-  { value: 'parfum', label: 'Parfum', emoji: '🌸', multiple: false },
-  { value: 'couleur', label: 'Couleur', emoji: '🎨', multiple: false },
-  { value: 'decoration', label: 'Décoration', emoji: '✨', multiple: true },
-  { value: 'contenant', label: 'Contenant', emoji: '🕯️', multiple: false },
+  { value: 'contenant', label: 'Contenant', emoji: '🕯️', multiple: false, step: 'Choisissez votre contenant', hint: 'Le format de votre bougie.' },
+  { value: 'couleur', label: 'Couleur de la cire', emoji: '🎨', multiple: false, step: 'Choisissez la couleur de la cire', hint: 'La teinte qui habillera votre bougie.' },
+  { value: 'parfum', label: 'Parfum', emoji: '🌸', multiple: false, step: 'Choisissez votre parfum', hint: 'Le sillage que vous aimez.' },
+  { value: 'decoration', label: 'Décorations', emoji: '✨', multiple: true, step: 'Ajoutez des décorations', hint: 'Plusieurs choix possibles — ajoutez ou retirez à envie.' },
+  { value: 'accessoire', label: 'Accessoires', emoji: '🎀', multiple: true, step: 'Ajoutez un accessoire', hint: 'La petite attention qui fait la différence.' },
+  { value: 'finition', label: 'Finition', emoji: '💫', multiple: false, step: 'Choisissez la finition', hint: 'Le dernier détail de la cire.' },
+  { value: 'modele_etiquette', label: 'Modèle d’étiquette', emoji: '🏷️', multiple: false, step: 'Choisissez votre étiquette', hint: 'Le fond sur lequel sera imprimé votre message.' },
+  { value: 'typographie', label: 'Typographie', emoji: 'Aa', multiple: false, step: 'Choisissez la typographie', hint: 'Le style de votre écriture.' },
+  { value: 'couleur_texte', label: 'Couleur du texte', emoji: '🖌️', multiple: false, step: 'Choisissez la couleur du texte', hint: 'Pour un contraste parfait avec l’étiquette.' },
+  { value: 'emoji', label: 'Emoji', emoji: '😊', multiple: false, step: 'Choisissez un emoji', hint: 'Facultatif — il apparaîtra sur l’étiquette.' },
 ];
+const CUSTOM_AVAILABILITIES = ['disponible', 'sur_commande', 'indisponible'];
+
+function parseMeta(value) {
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value || '{}') : value;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch { return {}; }
+}
 
 function customOptionPublic(row) {
   return {
@@ -197,6 +212,8 @@ function customOptionPublic(row) {
     image_url: txt(row.image_url),
     icon: txt(row.icon),
     extra_price: round(row.extra_price),
+    availability: CUSTOM_AVAILABILITIES.includes(row.availability) ? row.availability : 'disponible',
+    meta: parseMeta(row.meta),
   };
 }
 
@@ -208,7 +225,62 @@ function customRequestPublic(row) {
   } catch { /* données historiques */ }
   const base = round(getSetting('custom_base_price', 25));
   const extra = selections.reduce((sum, item) => sum + num(item.extra_price), 0);
-  return { ...row, selections, estimated_price: round(base + extra) };
+  return {
+    ...row,
+    selections,
+    configuration: parseMeta(row.configuration),
+    preview_image: txt(row.preview_image),
+    label_image: txt(row.label_image),
+    order_id: int((get('SELECT id FROM orders WHERE custom_request_id = ?', row.id) || {}).id, null),
+    estimated_price: round(base + extra),
+  };
+}
+
+// Configuration complète et structurée, reconstruite côté serveur à partir des
+// options valides de la base : le visiteur ne peut pas inventer une option.
+function buildCustomConfiguration(selections, label = {}) {
+  const byCategory = {};
+  for (const item of selections) {
+    const data = { id: item.id, name: item.name, extra_price: round(item.extra_price), ...parseMeta(item.meta) };
+    if (CUSTOM_CATEGORIES.find((c) => c.value === item.category)?.multiple) {
+      if (!byCategory[item.category]) byCategory[item.category] = [];
+      byCategory[item.category].push(data);
+    } else {
+      byCategory[item.category] = data;
+    }
+  }
+  const hex = (value, fallback) => (/^#[0-9a-f]{6}$/i.test(txt(value)) ? txt(value) : fallback);
+  const maxChars = Math.min(200, Math.max(20, int(getSetting('custom_label_max_chars', 60), 60)));
+  return {
+    container: byCategory.contenant || null,
+    wax: byCategory.couleur || null,
+    perfume: byCategory.parfum || null,
+    decorations: byCategory.decoration || [],
+    accessories: byCategory.accessoire || [],
+    finish: byCategory.finition || null,
+    label_model: byCategory.modele_etiquette || null,
+    typography: byCategory.typographie || null,
+    text_color: byCategory.couleur_texte || null,
+    emoji: byCategory.emoji || null,
+    label: {
+      phrase: txt(label.phrase).slice(0, maxChars),
+      emoji: txt(label.emoji).slice(0, 12),
+      font_stack: txt(label.font_stack).slice(0, 180),
+      color: hex(label.color, '#382011'),
+      background: hex(label.background, '#FFF9F0'),
+      border: hex(label.border, ''),
+      width_mm: Math.min(200, Math.max(20, num(label.width_mm, 60))),
+      height_mm: Math.min(200, Math.max(20, num(label.height_mm, 40))),
+      text_x: Math.min(80, Math.max(-80, num(label.text_x))),
+      text_y: Math.min(80, Math.max(-80, num(label.text_y))),
+    },
+  };
+}
+
+function sanitizeDataImage(value, maxBytes = 2.5 * 1024 * 1024) {
+  const raw = txt(value);
+  if (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=\r\n]+$/.test(raw)) return '';
+  return raw.length <= maxBytes * 1.4 ? raw : '';
 }
 
 function nextCustomRequestNumber() {
@@ -645,17 +717,29 @@ app.get('/api/custom-options', authRequired, (_req, res) => json(res, {
   categories: CUSTOM_CATEGORIES,
 }));
 
-const customOptionPayload = (b, existing = {}) => ({
-  category: CUSTOM_CATEGORIES.some((c) => c.value === txt(b.category))
-    ? txt(b.category) : (existing.category || 'parfum'),
-  name: txt(b.name) || existing.name || '',
-  description: txt(b.description),
-  image_url: txt(b.image_url),
-  icon: txt(b.icon),
-  extra_price: round(num(b.extra_price ?? existing.extra_price ?? 0)),
-  position: int(b.position ?? existing.position ?? 0, 0),
-  active: bool(b.active ?? 1),
-});
+const customOptionPayload = (b, existing = {}) => {
+  const meta = parseMeta(existing.meta);
+  const incoming = typeof b.meta === 'string' ? parseMeta(b.meta) : b.meta;
+  if (incoming && typeof incoming === 'object' && !Array.isArray(incoming)) {
+    for (const [key, value] of Object.entries(incoming)) {
+      if (/^[a-z_]{1,24}$/.test(key)) meta[key] = typeof value === 'string' ? txt(value).slice(0, 240) : value;
+    }
+  }
+  return {
+    category: CUSTOM_CATEGORIES.some((c) => c.value === txt(b.category))
+      ? txt(b.category) : (existing.category || 'contenant'),
+    name: txt(b.name) || existing.name || '',
+    description: txt(b.description),
+    image_url: txt(b.image_url),
+    icon: txt(b.icon),
+    extra_price: round(num(b.extra_price ?? existing.extra_price ?? 0)),
+    position: int(b.position ?? existing.position ?? 0, 0),
+    active: bool(b.active ?? 1),
+    availability: CUSTOM_AVAILABILITIES.includes(txt(b.availability))
+      ? txt(b.availability) : (existing.availability || 'disponible'),
+    meta: JSON.stringify(meta),
+  };
+};
 
 app.post('/api/custom-options', authRequired, (req, res) => {
   const values = customOptionPayload(req.body || {});
@@ -663,10 +747,10 @@ app.post('/api/custom-options', authRequired, (req, res) => {
   const date = now();
   const result = run(
     `INSERT INTO custom_options
-      (category, name, description, image_url, icon, extra_price, position, active, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (category, name, description, image_url, icon, extra_price, position, active, availability, meta, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     values.category, values.name, values.description, values.image_url, values.icon,
-    values.extra_price, values.position, values.active, date, date,
+    values.extra_price, values.position, values.active, values.availability, values.meta, date, date,
   );
   return json(res, { ok: true, id: Number(result.lastInsertRowid) }, 201);
 });
@@ -679,9 +763,9 @@ app.put('/api/custom-options/:id', authRequired, (req, res) => {
   if (!values.name) return json(res, { error: 'Le nom de l’option est obligatoire.' }, 400);
   run(
     `UPDATE custom_options SET category=?, name=?, description=?, image_url=?, icon=?,
-      extra_price=?, position=?, active=?, updated_at=? WHERE id=?`,
+      extra_price=?, position=?, active=?, availability=?, meta=?, updated_at=? WHERE id=?`,
     values.category, values.name, values.description, values.image_url, values.icon,
-    values.extra_price, values.position, values.active, now(), id,
+    values.extra_price, values.position, values.active, values.availability, values.meta, now(), id,
   );
   return json(res, { ok: true });
 });
@@ -718,6 +802,34 @@ app.delete('/api/custom-requests/:id', authRequired, (req, res) => {
   return json(res, { ok: true });
 });
 
+// Transforme une demande validée en commande du CRM existant (aucun second système).
+app.post('/api/custom-requests/:id/order', authRequired, (req, res) => {
+  const id = int(req.params.id, 0);
+  const request = get('SELECT * FROM custom_requests WHERE id = ?', id);
+  if (!request) return json(res, { error: 'Demande introuvable.' }, 404);
+  const existingOrder = get('SELECT id, number FROM orders WHERE custom_request_id = ?', id);
+  if (existingOrder) return json(res, { error: `Cette demande est déjà la commande ${existingOrder.number}.` }, 409);
+
+  const date = now();
+  const number = nextOrderNumber();
+  const customer = get('SELECT id FROM customers WHERE email = ?', request.email);
+  const notes = `Bougie personnalisée ${request.number} — ${request.customer_name}${request.message ? ` — ${request.message}` : ''}`;
+  const result = run(
+    `INSERT INTO orders
+      (number, customer_id, status, order_date, notes, custom_request_id, custom_config, custom_preview, created_at, updated_at)
+     VALUES (?, ?, 'brouillon', ?, ?, ?, ?, ?, ?, ?)`,
+    number, int(customer?.id, null), date.slice(0, 10), notes, id,
+    txt(request.configuration), txt(request.preview_image), date, date,
+  );
+  const orderId = Number(result.lastInsertRowid);
+  run(
+    'INSERT INTO order_items (order_id, product_id, product_name, quantity, unit_price) VALUES (?, NULL, ?, 1, ?)',
+    orderId, `Bougie personnalisée — ${request.number}`, request.price,
+  );
+  run("UPDATE custom_requests SET status = 'confirmee', updated_at = ? WHERE id = ?", date, id);
+  return json(res, { ok: true, id: orderId, number, customer_id: int(customer?.id, null) }, 201);
+});
+
 /* ------------------------------------------------------------------ */
 /* Paramètres                                                          */
 /* ------------------------------------------------------------------ */
@@ -727,7 +839,7 @@ const PUBLIC_SETTING_KEYS = [
   'zip', 'city', 'siret', 'hours', 'instagram', 'currency', 'vat_rate',
   'legal_name', 'siren', 'vat_number', 'rcs', 'ape', 'website', 'whatsapp',
   'tiktok', 'logo', 'hero_video', 'hero_image', 'featured_video',
-  'custom_base_price', 'custom_intro',
+  'custom_base_price', 'custom_intro', 'custom_label_width_mm', 'custom_label_height_mm', 'custom_label_max_chars',
 ];
 
 app.get('/api/settings', authRequired, (_req, res) => {
@@ -766,7 +878,9 @@ app.get('/api/public/events', (_req, res) => json(res, {
 
 app.get('/api/public/custom-options', (_req, res) => {
   const rows = all(
-    'SELECT * FROM custom_options WHERE active = 1 ORDER BY position ASC, id ASC',
+    `SELECT * FROM custom_options WHERE active = 1
+      AND COALESCE(availability, 'disponible') <> 'indisponible'
+     ORDER BY position ASC, id ASC`,
   );
   return json(res, {
     categories: CUSTOM_CATEGORIES.map((category) => ({
@@ -777,6 +891,11 @@ app.get('/api/public/custom-options', (_req, res) => {
     })),
     base_price: round(getSetting('custom_base_price', 25)),
     intro: getSetting('custom_intro', ''),
+    label: {
+      width_mm: Math.min(200, Math.max(20, num(getSetting('custom_label_width_mm', 60), 60))),
+      height_mm: Math.min(200, Math.max(20, num(getSetting('custom_label_height_mm', 40), 40))),
+      max_chars: Math.min(200, Math.max(20, int(getSetting('custom_label_max_chars', 60), 60))),
+    },
   });
 });
 
@@ -791,22 +910,45 @@ app.post('/api/public/custom-requests', (req, res) => {
     return json(res, { error: 'Adresse e-mail invalide.' }, 400);
   }
 
-  // Les prix sont recalculés côté serveur : le visiteur ne peut pas modifier le devis.
+  // Les prix et la configuration sont reconstruits côté serveur à partir de la base :
+  // le visiteur ne peut ni modifier un tarif ni inventer une option.
   const selections = [];
+  const configRows = [];
+  const seenSingle = new Set();
   for (const choice of Array.isArray(b.selections) ? b.selections : []) {
-    const option = get('SELECT * FROM custom_options WHERE id = ? AND active = 1', int(choice?.id ?? choice?.option_id, 0));
-    if (!option || !CUSTOM_CATEGORIES.some((c) => c.value === option.category)) continue;
-    if (!CUSTOM_CATEGORIES.find((c) => c.value === option.category).multiple
-      && selections.some((item) => item.category === option.category)) continue;
+    const option = get(
+      `SELECT * FROM custom_options WHERE id = ? AND active = 1
+       AND COALESCE(availability, 'disponible') <> 'indisponible'`,
+      int(choice?.id ?? choice?.option_id, 0),
+    );
+    if (!option) continue;
+    const category = CUSTOM_CATEGORIES.find((c) => c.value === option.category);
+    if (!category) continue;
+    if (!category.multiple) {
+      if (seenSingle.has(option.category)) continue;
+      seenSingle.add(option.category);
+    }
     selections.push({
       id: option.id,
       category: option.category,
       name: option.name,
       extra_price: round(option.extra_price),
     });
+    configRows.push({ ...selections[selections.length - 1], meta: txt(option.meta) });
   }
-  if (!selections.length) {
-    return json(res, { error: 'Choisissez au moins une option pour votre bougie.' }, 400);
+  const required = ['contenant', 'couleur', 'parfum'].filter((value) => !seenSingle.has(value));
+  if (required.length) {
+    return json(res, { error: 'Choisissez le contenant, la couleur de la cire et le parfum.' }, 400);
+  }
+
+  const rawLabel = b.label && typeof b.label === 'object' ? b.label : {};
+  const configuration = buildCustomConfiguration(configRows, {
+    ...rawLabel,
+    phrase: rawLabel.phrase ?? b.label_phrase,
+    emoji: rawLabel.emoji ?? b.label_emoji,
+  });
+  if (!configuration.label.phrase) {
+    return json(res, { error: 'Écrivez la phrase qui figurera sur l’étiquette.' }, 400);
   }
 
   const base = round(getSetting('custom_base_price', 25));
@@ -816,16 +958,20 @@ app.post('/api/public/custom-requests', (req, res) => {
   const date = now();
   run(
     `INSERT INTO custom_requests
-      (number, customer_name, email, phone, selections, label_phrase, label_emoji, message, price, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'nouvelle', ?, ?)`,
+      (number, customer_name, email, phone, selections, label_phrase, label_emoji, message,
+       price, status, configuration, preview_image, label_image, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'nouvelle', ?, ?, ?, ?, ?)`,
     number, customerName, email, txt(b.phone), JSON.stringify(selections),
-    txt(b.label_phrase).slice(0, 60), txt(b.label_emoji).slice(0, 12),
-    txt(b.message).slice(0, 2000), price, date, date,
+    configuration.label.phrase, configuration.label.emoji,
+    txt(b.message).slice(0, 2000), price, JSON.stringify(configuration),
+    sanitizeDataImage(b.preview_image), sanitizeDataImage(b.label_image, 1.5 * 1024 * 1024),
+    date, date,
   );
   return json(res, {
     ok: true,
     number,
     price,
+    configuration,
     message: 'Votre projet de bougie a bien été envoyé à l’atelier. Merci !',
   }, 201);
 });

@@ -48,10 +48,29 @@ export const EVENT_IMAGE_CHOICES = [
 ];
 
 export const CUSTOM_CATEGORIES = [
-  { value: 'parfum', label: 'Parfums', emoji: '🌸', multiple: false },
-  { value: 'couleur', label: 'Couleurs', emoji: '🎨', multiple: false },
-  { value: 'decoration', label: 'Décorations', emoji: '✨', multiple: true },
-  { value: 'contenant', label: 'Contenants', emoji: '🕯️', multiple: false },
+  { value: 'contenant', label: 'Contenant', emoji: '🕯️', multiple: false, step: 'Choisissez votre contenant', hint: 'Le format de votre bougie.' },
+  { value: 'couleur', label: 'Couleur de la cire', emoji: '🎨', multiple: false, step: 'Choisissez la couleur de la cire', hint: 'La teinte qui habillera votre bougie.' },
+  { value: 'parfum', label: 'Parfum', emoji: '🌸', multiple: false, step: 'Choisissez votre parfum', hint: 'Le sillage que vous aimez.' },
+  { value: 'decoration', label: 'Décorations', emoji: '✨', multiple: true, step: 'Ajoutez des décorations', hint: 'Plusieurs choix possibles — ajoutez ou retirez à envie.' },
+  { value: 'accessoire', label: 'Accessoires', emoji: '🎀', multiple: true, step: 'Ajoutez un accessoire', hint: 'La petite attention qui fait la différence.' },
+  { value: 'finition', label: 'Finition', emoji: '💫', multiple: false, step: 'Choisissez la finition', hint: 'Le dernier détail de la cire.' },
+  { value: 'modele_etiquette', label: 'Modèle d’étiquette', emoji: '🏷️', multiple: false, step: 'Choisissez votre étiquette', hint: 'Le fond sur lequel sera imprimé votre message.' },
+  { value: 'typographie', label: 'Typographie', emoji: 'Aa', multiple: false, step: 'Choisissez la typographie', hint: 'Le style de votre écriture.' },
+  { value: 'couleur_texte', label: 'Couleur du texte', emoji: '🖌️', multiple: false, step: 'Choisissez la couleur du texte', hint: 'Pour un contraste parfait avec l’étiquette.' },
+  { value: 'emoji', label: 'Emoji', emoji: '😊', multiple: false, step: 'Choisissez un emoji', hint: 'Facultatif — il apparaîtra sur l’étiquette.' },
+];
+
+export const CUSTOM_AVAILABILITIES = [
+  { value: 'disponible', label: 'Disponible' },
+  { value: 'sur_commande', label: 'Sur commande' },
+  { value: 'indisponible', label: 'Indisponible' },
+];
+
+export const CUSTOM_FONT_STACKS = [
+  { label: 'Élégante (serif)', value: "Georgia, 'Times New Roman', serif" },
+  { label: 'Moderne (sans-serif)', value: 'Arial, Helvetica, sans-serif' },
+  { label: 'Manuscrite', value: "'Segoe Script', 'Brush Script MT', cursive" },
+  { label: 'Classique', value: "'Times New Roman', Georgia, serif" },
 ];
 
 export const CUSTOM_REQUEST_STATUSES = [

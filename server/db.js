@@ -150,6 +150,9 @@ CREATE TABLE IF NOT EXISTS orders (
   shipping_cost REAL NOT NULL DEFAULT 0,
   discount      REAL NOT NULL DEFAULT 0,
   notes         TEXT DEFAULT '',
+  custom_request_id INTEGER REFERENCES custom_requests(id) ON DELETE SET NULL,
+  custom_config TEXT NOT NULL DEFAULT '',
+  custom_preview TEXT NOT NULL DEFAULT '',
   shipped_at    TEXT,
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
@@ -206,6 +209,8 @@ CREATE TABLE IF NOT EXISTS custom_options (
   extra_price REAL NOT NULL DEFAULT 0,
   position    INTEGER NOT NULL DEFAULT 0,
   active      INTEGER NOT NULL DEFAULT 1,
+  availability TEXT NOT NULL DEFAULT 'disponible',
+  meta        TEXT NOT NULL DEFAULT '{}',
   created_at  TEXT NOT NULL,
   updated_at  TEXT NOT NULL
 );
@@ -222,6 +227,9 @@ CREATE TABLE IF NOT EXISTS custom_requests (
   message      TEXT DEFAULT '',
   price        REAL NOT NULL DEFAULT 0,
   status       TEXT NOT NULL DEFAULT 'nouvelle',
+  configuration TEXT NOT NULL DEFAULT '{}',
+  preview_image TEXT NOT NULL DEFAULT '',
+  label_image  TEXT NOT NULL DEFAULT '',
   created_at   TEXT NOT NULL,
   updated_at   TEXT NOT NULL
 );
@@ -269,7 +277,10 @@ const DEFAULT_SETTINGS = {
   featured_video: '/videos/coffret.mp4',
   // Configurateur « Créer ma bougie »
   custom_base_price: '25',
-  custom_intro: 'Choisissez votre parfum, votre couleur et votre décoration, puis écrivez le petit mot qui rendra votre bougie unique.',
+  custom_intro: 'Composez votre bougie étape par étape : contenant, cire, parfum, décorations et étiquette personnalisée.',
+  custom_label_width_mm: '60',
+  custom_label_height_mm: '40',
+  custom_label_max_chars: '60',
 };
 
 const DEFAULT_EVENTS = [
@@ -309,41 +320,110 @@ function seedEvents() {
   }
 }
 
-// Options proposées dans le configurateur « Créer ma bougie ».
-// [catégorie, nom, description, image, icône, supplément, ordre]
+// Options proposées dans le configurateur — toutes modifiables depuis le CRM.
+// [catégorie, nom, description, image, icône, supplément, ordre, disponibilité, métadonnées JSON]
+const meta = (value) => JSON.stringify(value);
 const DEFAULT_CUSTOM_OPTIONS = [
-  ['parfum', 'Lavande', 'L’intemporelle sérénité des champs de Provence.', '/galerie/lavande.jpg', '💜', 0, 1],
-  ['parfum', 'Clémentine Monoï', 'L’agrume pétillant et la douceur solaire des îles.', '/galerie/cl%C3%A9mentine%20monoi%20(2).jpg', '🍊', 0, 2],
-  ['parfum', 'Fleur d’oranger', 'Une fragrance florale douce et enveloppante.', '/Lueur.png', '🤍', 0, 3],
-  ['parfum', 'Fruits rouges', 'Des notes gourmandes et réconfortantes.', '/Cl%C3%A9mentine.png', '🍓', 1.5, 4],
-  ['parfum', 'Pamplemousse', 'Une explosion de fraîcheur vive et acidulée.', '/galerie/pamplemousse%20(2).jpg', '🍋', 0, 5],
-  ['parfum', 'Gourmandise de Noël', 'Notes chaleureuses et épicées pour un hiver douillet.', '/galerie/Gourmandise%20de%20noel.jpg', '🎄', 2, 6],
-  ['couleur', 'Naturel / écru', 'La couleur authentique de la cire végétale.', '', '◯', 0, 1],
-  ['couleur', 'Ocre doré', 'Une teinte chaude et lumineuse.', '', '🟡', 0, 2],
-  ['couleur', 'Terracotta', 'Un ton terreux et chaleureux.', '', '🟠', 0, 3],
-  ['couleur', 'Vert sauge', 'Une nuance végétale apaisante.', '', '🟢', 0, 4],
-  ['couleur', 'Rose poudré', 'Une touche douce et délicate.', '', '🌸', 0, 5],
-  ['decoration', 'Fleurs séchées', 'Un bouquet délicat inclus dans la cire.', '', '🌾', 2.5, 1],
-  ['decoration', 'Paillettes dorées', 'Une finition scintillante et festive.', '', '✨', 1.5, 2],
-  ['decoration', 'Zestes d’agrume', 'Des éclats naturels qui parfument la flamme.', '', '🍊', 1.5, 3],
-  ['decoration', 'Cannelle & étoile', 'Une décoration gourmande et épicée.', '', '⭐', 2, 4],
-  ['decoration', 'Botaniques', 'Un assemblage de feuilles et graines naturelles.', '', '🌿', 2.5, 5],
-  ['contenant', 'Pot verre 180 ml', 'Le format classique, à réutiliser sans fin.', '/galerie/lavande.jpg', '🕯️', 0, 1],
-  ['contenant', 'Pot verre 300 ml', 'Une plus grande contenance pour durer plus longtemps.', '/galerie/Bougies%20stand.jpg', '🕯️', 6, 2],
-  ['contenant', 'Coffret cadeau', 'Trois bougies présentées dans une boîte kraft.', '/galerie/Bougies%20stand.jpg', '🎁', 24, 3],
+  // Contenants : les PNG sont des visuels détourés réels utilisés comme calque de base.
+  ['contenant', 'Pot verre 180 ml', 'Le format classique, à réutiliser sans fin.', '/Cl%C3%A9mentine.png', '🕯️', 0, 1, 'disponible', meta({ shape: 'jar', photo: '/Cl%C3%A9mentine.png' })],
+  ['contenant', 'Pot verre 300 ml', 'Une plus grande contenance pour durer plus longtemps.', '/Lueur.png', '🕯️', 6, 2, 'disponible', meta({ shape: 'jar-large', photo: '/Lueur.png' })],
+  ['contenant', 'Coffret cadeau', 'Trois bougies présentées dans une boîte kraft.', '/Pamplemousse.png', '🎁', 24, 3, 'sur_commande', meta({ shape: 'box', photo: '/Pamplemousse.png' })],
+
+  // Couleurs de cire : le hex pilote le calque de teinte du preview.
+  ['couleur', 'Naturel / écru', 'La couleur authentique de la cire végétale.', '', '◯', 0, 1, 'disponible', meta({ hex: '#EFE2C9' })],
+  ['couleur', 'Ocre doré', 'Une teinte chaude et lumineuse.', '', '🟡', 0, 2, 'disponible', meta({ hex: '#C7913F' })],
+  ['couleur', 'Terracotta', 'Un ton terreux et chaleureux.', '', '🟠', 0, 3, 'disponible', meta({ hex: '#B75B3C' })],
+  ['couleur', 'Vert sauge', 'Une nuance végétale apaisante.', '', '🟢', 0, 4, 'disponible', meta({ hex: '#889B7A' })],
+  ['couleur', 'Rose poudré', 'Une touche douce et délicate.', '', '🌸', 0, 5, 'disponible', meta({ hex: '#D8A3A3' })],
+
+  // Parfums
+  ['parfum', 'Lavande', 'L’intemporelle sérénité des champs de Provence.', '/galerie/lavande.jpg', '💜', 0, 1, 'disponible', meta({})],
+  ['parfum', 'Clémentine Monoï', 'L’agrume pétillant et la douceur solaire des îles.', '/galerie/cl%C3%A9mentine%20monoi%20(2).jpg', '🍊', 0, 2, 'disponible', meta({})],
+  ['parfum', 'Fleur d’oranger', 'Une fragrance florale douce et enveloppante.', '/Lueur.png', '🤍', 0, 3, 'disponible', meta({})],
+  ['parfum', 'Fruits rouges', 'Des notes gourmandes et réconfortantes.', '/Cl%C3%A9mentine.png', '🍓', 1.5, 4, 'disponible', meta({})],
+  ['parfum', 'Pamplemousse', 'Une explosion de fraîcheur vive et acidulée.', '/galerie/pamplemousse%20(2).jpg', '🍋', 0, 5, 'disponible', meta({})],
+  ['parfum', 'Gourmandise de Noël', 'Notes chaleureuses et épicées pour un hiver douillet.', '/galerie/Gourmandise%20de%20noel.jpg', '🎄', 2, 6, 'sur_commande', meta({})],
+
+  // Décorations (choix multiples)
+  ['decoration', 'Fleurs séchées', 'Un bouquet délicat inclus dans la cire.', '', '🌾', 2.5, 1, 'disponible', meta({ layer: 'flowers' })],
+  ['decoration', 'Paillettes dorées', 'Une finition scintillante et festive.', '', '✨', 1.5, 2, 'disponible', meta({ layer: 'glitter' })],
+  ['decoration', 'Zestes d’agrume', 'Des éclats naturels qui parfument la flamme.', '', '🍊', 1.5, 3, 'disponible', meta({ layer: 'zest' })],
+  ['decoration', 'Cannelle & étoile', 'Une décoration gourmande et épicée.', '', '⭐', 2, 4, 'disponible', meta({ layer: 'spice' })],
+  ['decoration', 'Botaniques', 'Un assemblage de feuilles et graines naturelles.', '', '🌿', 2.5, 5, 'disponible', meta({ layer: 'botanic' })],
+
+  // Accessoires (choix multiples)
+  ['accessoire', 'Couvercle bois', 'Un couvercle en hêtre pour protéger la cire.', '', '🪵', 2, 1, 'disponible', meta({})],
+  ['accessoire', 'Carte cadeau', 'Une carte kraft avec votre dédicace.', '', '💌', 1.5, 2, 'disponible', meta({})],
+  ['accessoire', 'Ruban naturel', 'Un ruban de coton autour du coffret.', '', '🎀', 1, 3, 'disponible', meta({})],
+  ['accessoire', 'Sachet botanique', 'Un sachet de fleurs séchées offert avec la bougie.', '', '🌾', 2.5, 4, 'sur_commande', meta({})],
+
+  // Finitions
+  ['finition', 'Finition lisse', 'La finition naturelle de la cire coulée à la main.', '', '◯', 0, 1, 'disponible', meta({ finish: 'smooth' })],
+  ['finition', 'Effet marbré', 'Un dégradé de cire travaillé à la spatule.', '', '🌀', 3, 2, 'disponible', meta({ finish: 'marbled' })],
+  ['finition', 'Finition mate', 'Un aspect doux et velouté.', '', '⚪', 1.5, 3, 'disponible', meta({ finish: 'matte' })],
+  ['finition', 'Éclat satiné', 'Une finition légèrement lumineuse.', '', '✨', 2, 4, 'disponible', meta({ finish: 'satin' })],
+
+  // Modèles d’étiquette : la metadonnée pilule fond, bordure et disposition dans l’éditeur.
+  ['modele_etiquette', 'Kraft naturel', 'Étiquette kraft recyclable, style atelier.', '', '🟤', 0, 1, 'disponible', meta({ background: '#E9D7BB', border: '#C9A97E', layout: 'center' })],
+  ['modele_etiquette', 'Blanc minimal', 'Un fond blanc épuré pour un rendu contemporain.', '', '⚪', 0, 2, 'disponible', meta({ background: '#FFFFFF', border: '', layout: 'center' })],
+  ['modele_etiquette', 'Cadre doré', 'Un liseré doré sur fond crème.', '', '🟡', 1.5, 3, 'disponible', meta({ background: '#FAF1DE', border: '#C79A3B', layout: 'frame' })],
+  ['modele_etiquette', 'Noir élégant', 'Un fond noir et un lettrage clair.', '', '⚫', 2, 4, 'disponible', meta({ background: '#2A221B', border: '#C79A3B', layout: 'frame' })],
+
+  // Typographies : la metadonnée contient la pile de polices CSS utilisée par Konva.
+  ['typographie', 'Élégante', 'Une serif douce et raffinée.', '', 'Aa', 0, 1, 'disponible', meta({ font_stack: "Georgia, 'Times New Roman', serif" })],
+  ['typographie', 'Moderne', 'Une sans-serif claire et lisible.', '', 'Aa', 0, 2, 'disponible', meta({ font_stack: 'Arial, Helvetica, sans-serif' })],
+  ['typographie', 'Manuscrite', 'Une écriture scriptée, comme à la main.', '', 'Aa', 1.5, 3, 'disponible', meta({ font_stack: "'Segoe Script', 'Brush Script MT', cursive" })],
+  ['typographie', 'Classique', 'Une typographie éditoriale intemporelle.', '', 'Aa', 0, 4, 'disponible', meta({ font_stack: "'Times New Roman', Georgia, serif" })],
+
+  // Couleurs du texte de l’étiquette
+  ['couleur_texte', 'Brun encre', 'La couleur signature ASIREM.', '', '●', 0, 1, 'disponible', meta({ hex: '#382011' })],
+  ['couleur_texte', 'Or', 'Un lettrage doré chaleureux.', '', '●', 0, 2, 'disponible', meta({ hex: '#B8892B' })],
+  ['couleur_texte', 'Crème', 'Un lettrage clair sur fond sombre.', '', '●', 0, 3, 'disponible', meta({ hex: '#FFF6E8' })],
+  ['couleur_texte', 'Olive', 'Une teinte végétale discrète.', '', '●', 0, 4, 'disponible', meta({ hex: '#5F6B4A' })],
+
+  // Emojis proposés dans l’éditeur (administrables comme les autres options).
+  ['emoji', '💜', 'Cœur violet', '', '💜', 0, 1, 'disponible', meta({})],
+  ['emoji', '🌸', 'Fleur', '', '🌸', 0, 2, 'disponible', meta({})],
+  ['emoji', '✨', 'Éclat', '', '✨', 0, 3, 'disponible', meta({})],
+  ['emoji', '🎁', 'Cadeau', '', '🎁', 0, 4, 'disponible', meta({})],
+  ['emoji', '🕯️', 'Bougie', '', '🕯️', 0, 5, 'disponible', meta({})],
+  ['emoji', '💫', 'Étoile filante', '', '💫', 0, 6, 'disponible', meta({})],
+  ['emoji', '🥰', 'Bisous', '', '🥰', 0, 7, 'disponible', meta({})],
+  ['emoji', '🌿', 'Feuille', '', '🌿', 0, 8, 'disponible', meta({})],
+  ['emoji', '🎉', 'Fête', '', '🎉', 0, 9, 'disponible', meta({})],
+  ['emoji', '🤍', 'Cœur blanc', '', '🤍', 0, 10, 'disponible', meta({})],
+  ['emoji', '🍊', 'Agrume', '', '🍊', 0, 11, 'disponible', meta({})],
+  ['emoji', '⭐', 'Étoile', '', '⭐', 0, 12, 'disponible', meta({})],
 ];
 
 function seedCustomOptions() {
-  if (get('SELECT COUNT(*) AS n FROM custom_options').n > 0) return;
+  // Une seule migration v2 : les suppressions faites depuis le CRM restent ensuite persistantes.
+  if (getSetting('__custom_options_seed') === 'v2') return;
   const timestamp = now();
-  for (const [category, name, description, image_url, icon, extra_price, position] of DEFAULT_CUSTOM_OPTIONS) {
-    run(
-      `INSERT INTO custom_options
-        (category, name, description, image_url, icon, extra_price, position, active, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
-      category, name, description, image_url, icon, extra_price, position, timestamp, timestamp,
-    );
+  for (const [category, name, description, image_url, icon, extra_price, position, availability, meta_json] of DEFAULT_CUSTOM_OPTIONS) {
+    const existing = get('SELECT id, image_url, meta FROM custom_options WHERE category = ? AND name = ?', category, name);
+    if (!existing) {
+      run(
+        `INSERT INTO custom_options
+          (category, name, description, image_url, icon, extra_price, position, active, availability, meta, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`,
+        category, name, description, image_url, icon, extra_price, position, availability, meta_json, timestamp, timestamp,
+      );
+      continue;
+    }
+    const updates = [];
+    const params = [];
+    if (!existing.image_url && image_url) { updates.push('image_url = ?'); params.push(image_url); }
+    if ((!existing.meta || existing.meta === '{}') && meta_json && meta_json !== '{}') {
+      updates.push('meta = ?'); params.push(meta_json);
+    }
+    if (updates.length) {
+      updates.push('updated_at = ?');
+      params.push(timestamp, existing.id);
+      run(`UPDATE custom_options SET ${updates.join(', ')} WHERE id = ?`, ...params);
+    }
   }
+  setSetting('__custom_options_seed', 'v2');
 }
 
 function seed() {
@@ -516,6 +596,32 @@ function seedMissingSettings() {
   }
 }
 
+// Évolution du schéma sans recréer la base : ajoute uniquement les colonnes manquantes.
+function migrateSchema() {
+  const columns = {
+    custom_options: {
+      availability: "TEXT NOT NULL DEFAULT 'disponible'",
+      meta: "TEXT NOT NULL DEFAULT '{}'",
+    },
+    custom_requests: {
+      configuration: "TEXT NOT NULL DEFAULT '{}'",
+      preview_image: "TEXT NOT NULL DEFAULT ''",
+      label_image: "TEXT NOT NULL DEFAULT ''",
+    },
+    orders: {
+      custom_request_id: 'INTEGER REFERENCES custom_requests(id) ON DELETE SET NULL',
+      custom_config: "TEXT NOT NULL DEFAULT ''",
+      custom_preview: "TEXT NOT NULL DEFAULT ''",
+    },
+  };
+  for (const [table, additions] of Object.entries(columns)) {
+    const present = new Set(all(`PRAGMA table_info(${table})`).map((row) => row.name));
+    for (const [name, definition] of Object.entries(additions)) {
+      if (!present.has(name)) run(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
+    }
+  }
+}
+
 export function initDb({ force = false } = {}) {
   if (force) {
     if (db) {
@@ -528,6 +634,7 @@ export function initDb({ force = false } = {}) {
     }
   }
   getDb().exec(SCHEMA);
+  migrateSchema();
   seed();
   seedMissingSettings();
   seedEvents();

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import PublicLayout from './pages/public/PublicLayout.jsx';
 import Home from './pages/public/Home.jsx';
@@ -19,8 +19,9 @@ import Orders from './pages/admin/Orders.jsx';
 import Contacts from './pages/admin/Contacts.jsx';
 import Settings from './pages/admin/Settings.jsx';
 import Events from './pages/admin/Events.jsx';
-import AdminCustomizer from './pages/admin/Customizer.jsx';
-import PublicCustomizer from './pages/public/Customizer.jsx';
+// Konva + Motion ne sont chargés que sur les pages du configurateur.
+const AdminCustomizer = lazy(() => import('./pages/admin/Customizer.jsx'));
+const PublicCustomizer = lazy(() => import('./pages/public/Customizer.jsx'));
 
 function NotFound() {
   return (
@@ -34,6 +35,7 @@ function NotFound() {
 
 export default function App() {
   return (
+    <Suspense fallback={<div className="as-empty" role="status">Chargement…</div>}>
     <Routes>
       <Route path="/admin/login" element={<Login />} />
       <Route path="/admin" element={<AdminLayout />}>
@@ -63,5 +65,6 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
+    </Suspense>
   );
 }
